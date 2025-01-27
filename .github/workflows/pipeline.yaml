@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'dev'
       - 'feat**'
   delete:
     branches:
