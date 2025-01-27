@@ -1,4 +1,4 @@
-package org.umaxcode.controller;
+package org.umaxcode.lambda_apiGateway.controller;
 
 
 import org.springframework.web.bind.annotation.*;

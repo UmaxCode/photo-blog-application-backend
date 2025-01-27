@@ -14,6 +14,7 @@ import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.umaxcode.lambda_apiGateway.StreamLambdaHandler;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

@@ -9,7 +9,7 @@ Resources:
   PhotoBlogApplicationFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: org.umaxcode.StreamLambdaHandler::handleRequest
+      Handler: org.umaxcode.lambda_apiGateway.StreamLambdaHandler::handleRequest
       Runtime: java21
       CodeUri: .
       MemorySize: 512

@@ -1,10 +1,10 @@
-package org.umaxcode;
+package org.umaxcode.lambda_apiGateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
-import org.umaxcode.controller.PingController;
+import org.umaxcode.lambda_apiGateway.controller.PingController;
 
 
 @SpringBootApplication
