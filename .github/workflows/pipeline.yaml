@@ -166,7 +166,7 @@ jobs:
           path: packaged-prod.yaml
 
   deploy-testing:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/dev'
     needs: [build-and-package]
     runs-on: ubuntu-latest
     steps:
