@@ -35,10 +35,10 @@ public class S3ServiceImpl implements S3Service {
         try {
             PutObjectResponse putResponse = s3Client.putObject(putRequest, fromBytes(pic.getBytes()));
             log.info("Put response: {}", putResponse);
+            return putResponse.requestChargedAsString();
         } catch (IOException ex) {
             log.error(ex.getMessage());
+            throw new RuntimeException(ex);
         }
-
-        return null;
     }
 }
