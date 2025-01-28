@@ -113,7 +113,7 @@ Resources:
       Domain: !Sub ${AWS::StackName}-user-pool-domain
       UserPoolId: !Ref UserPool
 
-  PicturesGlobalTable:  # DynamoDB Global Table
+  PicturesGlobalTable: # DynamoDB Global Table
     Type: AWS::DynamoDB::GlobalTable
     Properties:
       TableName: !Ref DynamoTableName
@@ -128,6 +128,19 @@ Resources:
       KeySchema:
         - AttributeName: picId
           KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ownerIndex
+          KeySchema:
+            - AttributeName: owner
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: picUrlIndex
+          KeySchema:
+            - AttributeName: picUrl
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
       Replicas:
         - Region: !Ref PrimaryRegion
         - Region: !Ref DRRegion
