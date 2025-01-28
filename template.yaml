@@ -106,8 +106,6 @@ Outputs:
   PhotoBlogApplicationApi:
     Description: URL for application
     Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ping'
-    Export:
-      Name: PhotoBlogApplicationApi
 
   UserPool:
     Description: Cognito User Pool ID
