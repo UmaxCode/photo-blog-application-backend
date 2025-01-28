@@ -39,14 +39,11 @@ Resources:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
             TableName: !Ref DynamoTableName
-        - PolicyName: S3UploadPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                Resource: !Sub ${StagingBucket.Arn}/*
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource: !Sub ${StagingBucket.Arn}/*
       CodeUri: .
       Environment:
         Variables:
