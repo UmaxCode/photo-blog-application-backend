@@ -37,7 +37,21 @@ Resources:
       Runtime: java21
       Policies:
         - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+          TableName: !Ref DynamoTableName
+        - PolicyName: S3UploadPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !GetAtt StagingBucket.Arn
       CodeUri: .
+      Environment:
+        Variables:
+          AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
+          AWS_S3_STAGE_BUCKET_NAME: !Sub ${AWS::StackName}-staging-bucket
       Events:
         ProxyResource:
           Type: Api
