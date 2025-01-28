@@ -1,9 +1,9 @@
-package org.umaxcode.lambda_apiGateway.repository.impl;
+package org.umaxcode.repository.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
-import org.umaxcode.lambda_apiGateway.repository.PhotoBlogRepository;
+import org.umaxcode.repository.PhotoBlogRepository;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;

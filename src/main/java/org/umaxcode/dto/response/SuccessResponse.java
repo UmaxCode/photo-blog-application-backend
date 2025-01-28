@@ -1,4 +1,4 @@
-package org.umaxcode.lambda_apiGateway.domain.dto.response;
+package org.umaxcode.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;

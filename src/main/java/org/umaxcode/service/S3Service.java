@@ -1,4 +1,4 @@
-package org.umaxcode.lambda_apiGateway.service;
+package org.umaxcode.service;
 
 import org.springframework.web.multipart.MultipartFile;
 

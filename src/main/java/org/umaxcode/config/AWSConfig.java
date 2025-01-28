@@ -1,4 +1,4 @@
-package org.umaxcode.lambda_apiGateway.config;
+package org.umaxcode.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

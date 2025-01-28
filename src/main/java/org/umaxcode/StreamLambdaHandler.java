@@ -1,4 +1,4 @@
-package org.umaxcode.lambda_apiGateway;
+package org.umaxcode;
 
 
 import com.amazonaws.serverless.exceptions.ContainerInitializationException;

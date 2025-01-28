@@ -1,11 +1,11 @@
-package org.umaxcode.lambda_apiGateway.service.impl;
+package org.umaxcode.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.umaxcode.lambda_apiGateway.service.S3Service;
+import org.umaxcode.service.S3Service;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;

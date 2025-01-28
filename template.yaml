@@ -33,7 +33,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-APILambda
-      Handler: org.umaxcode.lambda_apiGateway.StreamLambdaHandler::handleRequest
+      Handler: org.umaxcode.StreamLambdaHandler::handleRequest
       Runtime: java21
       Policies:
         - AWSLambdaBasicExecutionRole

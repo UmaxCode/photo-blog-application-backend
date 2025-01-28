@@ -1,4 +1,4 @@
-package org.umaxcode.lambda_apiGateway.repository;
+package org.umaxcode.repository;
 
 public interface PhotoBlogRepository {
 
