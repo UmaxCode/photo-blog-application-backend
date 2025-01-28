@@ -46,7 +46,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:PutObject
-                Resource: !GetAtt StagingBucket.Arn
+                Resource: !Sub ${StagingBucket.Arn}/*
       CodeUri: .
       Environment:
         Variables:
