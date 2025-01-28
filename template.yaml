@@ -10,6 +10,18 @@ Globals:
     Timeout: 30
 
 Parameters:
+  DynamoTableName:
+    Description: Table name of DynamoDB Table
+    Type: String
+    Default: picturesInfo
+  PrimaryRegion:
+    Description: Primary region for deployment
+    Type: String
+    Default: eu-central-1
+  DRRegion:
+    Description: Disaster recovery region for failover
+    Type: String
+    Default: eu-west-1
   CognitoCallbackURL:
     Description: Cognito callback url
     Type: String
@@ -100,6 +112,39 @@ Resources:
     Properties:
       Domain: !Sub ${AWS::StackName}-user-pool-domain
       UserPoolId: !Ref UserPool
+
+  PicturesGlobalTable:  # DynamoDB Global Table
+    Type: AWS::DynamoDB::GlobalTable
+    Properties:
+      TableName: !Ref DynamoTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: picId
+          AttributeType: S
+        - AttributeName: owner
+          AttributeType: S
+        - AttributeName: picUrl
+          AttributeType: S
+      KeySchema:
+        - AttributeName: picId
+          KeyType: HASH
+      Replicas:
+        - Region: !Ref PrimaryRegion
+        - Region: !Ref DRRegion
+      SSESpecification:
+        SSEEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+
+  StagingBucket: # Staging S3 Bucket (for uploading images before processing)
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-staging-bucket
+
+  PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-primary-bucket
 
 
 Outputs:
