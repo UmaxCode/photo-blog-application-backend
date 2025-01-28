@@ -65,41 +65,41 @@ Resources:
           RequireSymbols: true
           TemporaryPasswordValidityDays: 7
 
-    UserPoolClient: # Cognito User Pool Client
-      Type: AWS::Cognito::UserPoolClient
-      Properties:
-        ClientName: !Sub ${AWS::StackName}-user-pool-client
-        GenerateSecret: true
-        AllowedOAuthFlowsUserPoolClient: true
-        AllowedOAuthFlows:
-          - code
-          - implicit
-        AllowedOAuthScopes:
-          - email
-          - openid
-          - profile
-        SupportedIdentityProviders:
-          - COGNITO
-        ExplicitAuthFlows:
-          - ALLOW_USER_PASSWORD_AUTH
-          - ALLOW_USER_SRP_AUTH
-          - ALLOW_REFRESH_TOKEN_AUTH
-        CallbackURLs:
-          - !Ref CognitoCallbackURL
-        UserPoolId: !Ref UserPool
-        RefreshTokenValidity: 10
-        AccessTokenValidity: 3
-        IdTokenValidity: 3
-        TokenValidityUnits:
-          AccessToken: hours
-          IdToken: hours
-          RefreshToken: days
+  UserPoolClient: # Cognito User Pool Client
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub ${AWS::StackName}-user-pool-client
+      GenerateSecret: true
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      SupportedIdentityProviders:
+        - COGNITO
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      CallbackURLs:
+        - !Ref CognitoCallbackURL
+      UserPoolId: !Ref UserPool
+      RefreshTokenValidity: 10
+      AccessTokenValidity: 3
+      IdTokenValidity: 3
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
 
-    UserPoolDomain: # Cognito User Pool Domain
-      Type: AWS::Cognito::UserPoolDomain
-      Properties:
-        Domain: !Sub ${AWS::StackName}-user-pool-domain
-        UserPoolId: !Ref UserPool
+  UserPoolDomain: # Cognito User Pool Domain
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub ${AWS::StackName}-user-pool-domain
+      UserPoolId: !Ref UserPool
 
 
 Outputs:

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'dev'
       - 'feat**'
   delete:
     branches:
@@ -106,8 +107,8 @@ jobs:
             --no-fail-on-empty-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE}
 
-  build-and-package:
-    if: github.ref == 'refs/heads/main'
+  build-and-package-for-testing:
+    if: github.ref == 'refs/heads/dev'
     needs: [test]
     runs-on: ubuntu-latest
     steps:
@@ -142,6 +143,19 @@ jobs:
           name: packaged-testing.yaml
           path: packaged-testing.yaml
 
+  build-and-package-for-production:
+    if: github.ref == 'refs/heads/main'
+    needs: [ test ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Build resources
+        run: sam build --template ${SAM_TEMPLATE} --use-container
+
       - name: Assume the prod pipeline user role
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -166,8 +180,8 @@ jobs:
           path: packaged-prod.yaml
 
   deploy-testing:
-    if: github.ref == 'refs/heads/main'
-    needs: [build-and-package]
+    if: github.ref == 'refs/heads/dev'
+    needs: [build-and-package-for-testing]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -201,7 +215,7 @@ jobs:
 
   integration-test:
     if: github.ref == 'refs/heads/main'
-    needs: [deploy-testing]
+    needs: [build-and-package-for-production]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
