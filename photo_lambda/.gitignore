@@ -4,10 +4,10 @@ target/
 !**/src/test/**/target/
 
 ### IntelliJ IDEA ###
-.idea/modules.xml
+photo_lambda/.idea/modules.xml
 .idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+photo_lambda/.idea/compiler.xml
+photo_lambda/.idea/libraries/
 *.iws
 *.iml
 *.ipr
@@ -36,5 +36,3 @@ build/
 
 ### Mac OS ###
 .DS_Store
-
-.aws-sam
