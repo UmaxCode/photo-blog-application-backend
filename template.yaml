@@ -33,7 +33,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-APILambda
-      Handler: photo_lambda/src/main/java/org/umaxcode.StreamLambdaHandler::handleRequest
+      Handler: org.umaxcode.StreamLambdaHandler::handleRequest
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
@@ -195,7 +195,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-imageProcessor
-      Handler: statemachine/src/main/java/org/umaxcode.ImageProcessorLambdaHandler::handleRequest
+      Handler: org.umaxcode.ImageProcessorLambdaHandler::handleRequest
       Policies:
         - AWSLambdaBasicExecutionRole
       CodeUri: statemachine

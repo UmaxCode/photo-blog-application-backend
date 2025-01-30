@@ -4,10 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="614db2f3-9eaa-4694-b365-17678b70406e" name="Changes" comment="refactor: refactor folder structure">
-      <change beforePath="$PROJECT_DIR$/photo_lambda/src/main/java/org/umaxcode/service/S3Service.java" beforeDir="false" afterPath="$PROJECT_DIR$/photo_lambda/src/main/java/org/umaxcode/service/S3Service.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/photo_lambda/src/main/java/org/umaxcode/service/impl/PhotoBlogServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/photo_lambda/src/main/java/org/umaxcode/service/impl/PhotoBlogServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/photo_lambda/src/main/java/org/umaxcode/service/impl/S3ServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/photo_lambda/src/main/java/org/umaxcode/service/impl/S3ServiceImpl.java" afterDir="false" />
+    <list default="true" id="614db2f3-9eaa-4694-b365-17678b70406e" name="Changes" comment="feat: add statemachine, s3 notification and lambda function resource for image processing in template.yaml">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/template.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/template.yaml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -171,7 +169,7 @@
       <workItem from="1738134773249" duration="16712000" />
       <workItem from="1738157462813" duration="120000" />
       <workItem from="1738157652975" duration="8817000" />
-      <workItem from="1738224797584" duration="1954000" />
+      <workItem from="1738224797584" duration="3394000" />
     </task>
     <task id="LOCAL-00001" summary="chore: update folder structure">
       <option name="closed" value="true" />
@@ -429,16 +427,37 @@
       <option name="project" value="LOCAL" />
       <updated>1738161236431</updated>
     </task>
-    <option name="localTasksCounter" value="33" />
+    <task id="LOCAL-00033" summary="refactor: code refactor">
+      <option name="closed" value="true" />
+      <created>1738226917943</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1738226917943</updated>
+    </task>
+    <task id="LOCAL-00034" summary="feat: add lambda function for statemachine">
+      <option name="closed" value="true" />
+      <created>1738227002720</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1738227002721</updated>
+    </task>
+    <task id="LOCAL-00035" summary="feat: add statemachine, s3 notification and lambda function resource for image processing in template.yaml">
+      <option name="closed" value="true" />
+      <created>1738227088792</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1738227088792</updated>
+    </task>
+    <option name="localTasksCounter" value="36" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="feat: add pipeline.yaml for CI/CD setup" />
-    <MESSAGE value="chore: rename template.yml to template.yaml" />
-    <MESSAGE value="chore: correct indentation issues in SAM template" />
     <MESSAGE value="feat: add dev branch to pipeline.yaml" />
     <MESSAGE value="feat: separate build for production and testing" />
     <MESSAGE value="fix: fix pipeline dependency issue" />
@@ -461,6 +480,9 @@
     <MESSAGE value="refactor: return a valid string after a file has been uploaded" />
     <MESSAGE value="feat: add lambda function handler to for image processing" />
     <MESSAGE value="refactor: refactor folder structure" />
-    <option name="LAST_COMMIT_MESSAGE" value="refactor: refactor folder structure" />
+    <MESSAGE value="refactor: code refactor" />
+    <MESSAGE value="feat: add lambda function for statemachine" />
+    <MESSAGE value="feat: add statemachine, s3 notification and lambda function resource for image processing in template.yaml" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: add statemachine, s3 notification and lambda function resource for image processing in template.yaml" />
   </component>
 </project>
