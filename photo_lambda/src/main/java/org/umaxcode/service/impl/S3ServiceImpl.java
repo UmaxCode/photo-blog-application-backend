@@ -24,10 +24,12 @@ public class S3ServiceImpl implements S3Service {
     private String stageBucketName;
 
     @Override
-    public String upload(MultipartFile pic, String uploadBy) {
+    public String upload(MultipartFile pic, String email, String firstName, String lastName) {
 
         Map<String, String> metadata = new HashMap<>();
-        metadata.put("uploadBy", uploadBy);
+        metadata.put("email", email);
+        metadata.put("firstName", firstName);
+        metadata.put("lastName", lastName);
         PutObjectRequest putRequest = PutObjectRequest.builder()
                 .bucket(stageBucketName)
                 .key(pic.getOriginalFilename())
@@ -38,7 +40,7 @@ public class S3ServiceImpl implements S3Service {
         try {
             PutObjectResponse putResponse = s3Client.putObject(putRequest, fromBytes(pic.getBytes()));
             System.out.printf("Put response: %s", putResponse);
-            return putResponse.requestChargedAsString();
+            return "Image uploaded for processing";
         } catch (IOException ex) {
             System.out.printf("error: %s", ex.getMessage());
             throw new RuntimeException(ex);

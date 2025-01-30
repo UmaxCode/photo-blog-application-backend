@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.umaxcode.dto.response.PhotoUploadDTo;
 import org.umaxcode.dto.response.SuccessResponse;
 import org.umaxcode.service.PhotoBlogService;
 
@@ -19,11 +18,10 @@ public class PhotoBlogController {
     @ResponseStatus(HttpStatus.CREATED)
     public SuccessResponse uploadPhoto(@RequestPart MultipartFile pic) {
 
-        PhotoUploadDTo uploadPicResponse = photoBlogService.upload(pic);
+        String uploadPicResponse = photoBlogService.upload(pic);
 
         return SuccessResponse.builder()
-                .message("Photo uploaded successfully")
-                .data(uploadPicResponse)
+                .message(uploadPicResponse)
                 .build();
     }
 }

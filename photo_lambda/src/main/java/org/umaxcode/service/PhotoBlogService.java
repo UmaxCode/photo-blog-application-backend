@@ -5,5 +5,5 @@ import org.umaxcode.dto.response.PhotoUploadDTo;
 
 public interface PhotoBlogService {
 
-    PhotoUploadDTo upload(MultipartFile pic);
+    String upload(MultipartFile pic);
 }

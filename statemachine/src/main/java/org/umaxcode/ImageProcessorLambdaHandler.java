@@ -30,8 +30,10 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
             String bucketName = (String) bucket.get("name");
             String objectKey = (String) object.get("key");
 
-            String userEmail = getUploadedByMetadata(bucketName, objectKey, context);
-            context.getLogger().log("User: " + userEmail);
+            Map<String, String> metadata = getS3ObjectMetadata(bucketName, objectKey, context);
+            context.getLogger().log("Email: " + metadata.get("email"));
+            context.getLogger().log("FirstName: " + metadata.get("firstname"));
+            context.getLogger().log("LastName: " + metadata.get("lastname"));
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -39,7 +41,7 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         return null;
     }
 
-    private String getUploadedByMetadata(String bucketName, String objectKey, Context context) {
+    private Map<String, String> getS3ObjectMetadata(String bucketName, String objectKey, Context context) {
 
         // Query S3 metadata
         HeadObjectRequest headRequest = HeadObjectRequest.builder()
@@ -50,6 +52,7 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         HeadObjectResponse response = s3Client.headObject(headRequest);
 
         context.getLogger().log("Uploaded by metadata: " + response.metadata());
-        return response.metadata().get("x-amz-meta-uploadby");
+
+        return response.metadata();
     }
 }
