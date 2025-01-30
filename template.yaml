@@ -4,6 +4,8 @@ Description: AWS Serverless Spring Boot 2 API - org.umaxcode::photo-blog-applica
 Globals:
   Api:
     EndpointConfiguration: REGIONAL
+    BinaryMediaTypes:
+      - multipart/form-data
   Function:
     Runtime: java21
     MemorySize: 512
