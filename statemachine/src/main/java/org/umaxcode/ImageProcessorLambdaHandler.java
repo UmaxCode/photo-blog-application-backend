@@ -2,7 +2,6 @@ package org.umaxcode;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import org.springframework.beans.factory.annotation.Value;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
@@ -20,19 +19,16 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
 
     private final S3Client s3Client;
     private final DynamoDbClient dynamoDbClient;
-
-    @Value("${application.aws.tableName}")
-    private String tableName;
-
-    @Value("${application.aws.stageBucketName}")
-    private String stageBucketName;
-
-    @Value("${application.aws.primaryBucketName}")
-    private String primaryBucketName;
+    private final String tableName;
+    private final String stageBucketName;
+    private final String primaryBucketName;
 
     public ImageProcessorLambdaHandler() {
         this.s3Client = S3Client.create();
         this.dynamoDbClient = DynamoDbClient.create();
+        this.tableName = System.getenv("AWS_DYNAMODB_TABLE_NAME");
+        this.stageBucketName = System.getenv("AWS_S3_STAGE_BUCKET_NAME");
+        this.primaryBucketName = System.getenv("AWS_S3_PRIMARY_BUCKET_NAME");
     }
 
     @Override
