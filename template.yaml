@@ -33,8 +33,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-APILambda
-      Handler: org.umaxcode.StreamLambdaHandler::handleRequest
-      Runtime: java21
+      Handler: photo_lambda/src/main/java/org/umaxcode.StreamLambdaHandler::handleRequest
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
@@ -44,7 +43,7 @@ Resources:
             Action:
               - s3:PutObject
             Resource: !Sub ${StagingBucket.Arn}/*
-      CodeUri: .
+      CodeUri: photo_lambda
       Environment:
         Variables:
           AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
@@ -164,6 +163,42 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub ${AWS::StackName}-staging-bucket
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+
+  ImageProcessorStateMachine: # Statemachine for executing the image processing function
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/statemachine.asl.json
+      DefinitionSubstitutions:
+        ImageProcessingLambda: !GetAtt ProcessImageFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ProcessImageFunction
+      Events:
+        StateChange:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: default
+            Pattern:
+              source:
+                - aws.s3
+              detail-type:
+                - Object Created
+              detail:
+                bucket:
+                  name:
+                    - !Ref StagingBucket
+
+  ProcessImageFunction: # Lambda function for processing uploaded images
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-imageProcessor
+      Handler: statemachine/src/main/java/org/umaxcode.ImageProcessorLambdaHandler::handleRequest
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      CodeUri: statemachine
 
   PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
     Type: AWS::S3::Bucket
@@ -187,4 +222,14 @@ Outputs:
   CognitoLoginURL:
     Description: Cognito User Pool Application Client Hosted Login UI URL
     Value: !Sub "https://${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${UserPoolClient}&response_type=code&redirect_uri=${CognitoCallbackURL}"
+
+  StagingBucket:
+    Description: "S3 bucket for holding unprocessed uploaded images"
+    Value: !Ref StagingBucket
+
+  PrimaryBucket:
+    Description: "S3 bucket for holding processed upload images"
+    Value: !Ref PrimaryBucket
+
+
 
