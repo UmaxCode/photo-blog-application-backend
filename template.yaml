@@ -209,6 +209,11 @@ Resources:
             Action:
               - s3:PutObject
             Resource: !Sub ${PrimaryBucket.Arn}/*
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:PutItem
+            Resource: !GetAtt PicturesGlobalTable.Arn
       CodeUri: statemachine
       Environment:
         Variables:
