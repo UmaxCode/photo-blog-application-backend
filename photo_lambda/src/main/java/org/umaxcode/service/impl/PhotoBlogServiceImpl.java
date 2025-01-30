@@ -18,8 +18,7 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     @Override
     public PhotoUploadDTo upload(MultipartFile pic) {
 
-        String uploadedPicUrl = s3Service.upload(pic);
-        photoBlogRepository.createItem(uploadedPicUrl, "example@gmail.com");
+        String uploadedPicUrl = s3Service.upload(pic, "example@gmail.com");
         return PhotoUploadDTo.builder()
                 .picUrl(uploadedPicUrl)
                 .build();

@@ -11,6 +11,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static software.amazon.awssdk.core.sync.RequestBody.fromBytes;
 
@@ -24,12 +26,15 @@ public class S3ServiceImpl implements S3Service {
     private String stageBucketName;
 
     @Override
-    public String upload(MultipartFile pic) {
+    public String upload(MultipartFile pic, String uploadBy) {
 
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("uploadBy", uploadBy);
         PutObjectRequest putRequest = PutObjectRequest.builder()
                 .bucket(stageBucketName)
                 .key(pic.getOriginalFilename())
                 .contentType(pic.getContentType())
+                .metadata(metadata)
                 .build();
 
         try {
