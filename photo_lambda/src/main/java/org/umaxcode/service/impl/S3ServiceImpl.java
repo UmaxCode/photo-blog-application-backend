@@ -1,7 +1,6 @@
 package org.umaxcode.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,7 +15,6 @@ import java.util.Map;
 
 import static software.amazon.awssdk.core.sync.RequestBody.fromBytes;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class S3ServiceImpl implements S3Service {
@@ -39,10 +37,10 @@ public class S3ServiceImpl implements S3Service {
 
         try {
             PutObjectResponse putResponse = s3Client.putObject(putRequest, fromBytes(pic.getBytes()));
-            log.info("Put response: {}", putResponse);
+            System.out.printf("Put response: %s", putResponse);
             return putResponse.requestChargedAsString();
         } catch (IOException ex) {
-            log.error(ex.getMessage());
+            System.out.printf("error: %s", ex.getMessage());
             throw new RuntimeException(ex);
         }
     }
