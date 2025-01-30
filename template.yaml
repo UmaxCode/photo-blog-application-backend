@@ -210,6 +210,12 @@ Resources:
               - s3:PutObject
             Resource: !Sub ${PrimaryBucket.Arn}/*
       CodeUri: statemachine
+      Environment:
+        Variables:
+          AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
+          AWS_S3_STAGE_BUCKET_NAME: !Sub ${AWS::StackName}-staging-bucket
+          AWS_S3_PRIMARY_BUCKET_NAME: !Sub ${AWS::StackName}-primary-bucket
+
 
   PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
     Type: AWS::S3::Bucket
