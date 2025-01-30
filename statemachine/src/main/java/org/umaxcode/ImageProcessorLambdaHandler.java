@@ -2,10 +2,13 @@ package org.umaxcode;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
@@ -54,7 +57,7 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
             String lastName = metadata.get("lastname");
 
             // Add watermark to image
-            String processedImageUrl = processPhoto(firstName, lastName, context);
+            String processedImageUrl = processPhoto(bucketName, objectKey, context);
 
             // Store processImage in dynamoDB
             storePhoto(processedImageUrl, email, context);
@@ -80,7 +83,16 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         return response.metadata();
     }
 
-    private String processPhoto(String firstName, String lastName, Context context) {
+    private String processPhoto(String bucketName, String objectKey, Context context) {
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(objectKey)
+                .build();
+
+        ResponseInputStream<GetObjectResponse> objectResponse = s3Client.getObject(getObjectRequest);
+
+        context.getLogger().log("Metadata: " + objectResponse.response().metadata());
 
         return "url-path";
     }
