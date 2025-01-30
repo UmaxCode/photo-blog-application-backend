@@ -198,6 +198,17 @@ Resources:
       Handler: org.umaxcode.ImageProcessorLambdaHandler::handleRequest
       Policies:
         - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:DeleteObject
+              Resource: !Sub ${StagingBucket.Arn}/*
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource: !Sub ${PrimaryBucket.Arn}/*
       CodeUri: statemachine
 
   PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
