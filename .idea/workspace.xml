@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="614db2f3-9eaa-4694-b365-17678b70406e" name="Changes" comment="refactor: refactor folder structure">
+      <change beforePath="$PROJECT_DIR$/photo_lambda/src/main/java/org/umaxcode/service/S3Service.java" beforeDir="false" afterPath="$PROJECT_DIR$/photo_lambda/src/main/java/org/umaxcode/service/S3Service.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/photo_lambda/src/main/java/org/umaxcode/service/impl/PhotoBlogServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/photo_lambda/src/main/java/org/umaxcode/service/impl/PhotoBlogServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/photo_lambda/src/main/java/org/umaxcode/service/impl/S3ServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/photo_lambda/src/main/java/org/umaxcode/service/impl/S3ServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/template.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/template.yaml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Interface" />
+        <option value="Record" />
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="dev" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;UmaxCode&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/UmaxCode/photo-blog-application.git&quot;,
+    &quot;accountId&quot;: &quot;ba68b87d-8975-4c8b-a2b1-85eba9adf74a&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="2sANY00G7c5EWWfZ5RaZcS5emmZ" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "JUnit.StreamLambdaHandlerTest.executor": "Run",
+    "Maven. [org.apache.maven.plugins:maven-archetype-plugin:RELEASE:generate].executor": "Run",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "Spring Boot.Application (1).executor": "Run",
+    "Spring Boot.Application.executor": "Run",
+    "git-widget-placeholder": "#3 on feat/picture-upload",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/MaxwellOdoom/Desktop/Umaxcode/projects/Amalitech_Projects/Projects/photo-blog-application",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "reference.projectsettings.compiler.annotationProcessors",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\MaxwellOdoom\Desktop\Umaxcode\projects\Amalitech_Projects\Projects\photo-blog-application\statemachines" />
+      <recent name="C:\Users\MaxwellOdoom\Desktop\Umaxcode\projects\Amalitech_Projects\Projects\photo-blog-application\photo_lambda" />
+    </key>
+    <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
+      <recent name="org.umaxcode" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Spring Boot.Application (1)">
+    <configuration name="StreamLambdaHandlerTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="photo-blog-application" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="lambda_image_processor.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="org.umaxcode" />
+      <option name="MAIN_CLASS_NAME" value="org.umaxcode.StreamLambdaHandlerTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Application (1)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
+      <module name="photo-blog-application" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="org.umaxcode.Application" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="org.umaxcode.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Application" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
+      <module name="photo-blog-application" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="org.umaxcode.lambda_apiGateway.controller.Application" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="org.umaxcode.lambda_apiGateway.controller.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Application" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
+      <module name="photo-blog-application" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="org.umaxcode.Application" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="org.umaxcode.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Spring Boot.Application (1)" />
+        <item itemvalue="Spring Boot.Application" />
+        <item itemvalue="JUnit.StreamLambdaHandlerTest" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9f38398b9061-39b83d9b5494-intellij.indexing.shared.core-IU-241.18968.26" />
+        <option value="bundled-js-predefined-1d06a55b98c1-0b3e54e931b4-JavaScript-IU-241.18968.26" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="614db2f3-9eaa-4694-b365-17678b70406e" name="Changes" comment="" />
+      <created>1737894465308</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1737894465308</updated>
+      <workItem from="1737894466433" duration="1506000" />
+      <workItem from="1737901162017" duration="232000" />
+      <workItem from="1737984964710" duration="10544000" />
+      <workItem from="1738045609879" duration="28383000" />
+      <workItem from="1738134773249" duration="16712000" />
+      <workItem from="1738157462813" duration="120000" />
+      <workItem from="1738157652975" duration="8817000" />
+      <workItem from="1738224797584" duration="1954000" />
+    </task>
+    <task id="LOCAL-00001" summary="chore: update folder structure">
+      <option name="closed" value="true" />
+      <created>1737986614086</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1737986614086</updated>
+    </task>
+    <task id="LOCAL-00002" summary="refactor: make handler variable final">
+      <option name="closed" value="true" />
+      <created>1737986875185</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1737986875185</updated>
+    </task>
+    <task id="LOCAL-00003" summary="feat: add Lambda function with API Gateway integration and Cognito (pool, client, domain)">
+      <option name="closed" value="true" />
+      <created>1737993579660</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1737993579660</updated>
+    </task>
+    <task id="LOCAL-00004" summary="feat: add pipeline.yaml for CI/CD setup">
+      <option name="closed" value="true" />
+      <created>1737993728983</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1737993728983</updated>
+    </task>
+    <task id="LOCAL-00005" summary="chore: rename template.yml to template.yaml">
+      <option name="closed" value="true" />
+      <created>1737993936202</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1737993936202</updated>
+    </task>
+    <task id="LOCAL-00006" summary="chore: correct indentation issues in SAM template">
+      <option name="closed" value="true" />
+      <created>1737994601745</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1737994601745</updated>
+    </task>
+    <task id="LOCAL-00007" summary="chore: correct indentation issues in SAM template">
+      <option name="closed" value="true" />
+      <created>1737994642807</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1737994642807</updated>
+    </task>
+    <task id="LOCAL-00008" summary="feat: add dev branch to pipeline.yaml">
+      <option name="closed" value="true" />
+      <created>1737994721490</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1737994721490</updated>
+    </task>
+    <task id="LOCAL-00009" summary="feat: add dev branch to pipeline.yaml">
+      <option name="closed" value="true" />
+      <created>1737994825953</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1737994825953</updated>
+    </task>
+    <task id="LOCAL-00010" summary="feat: separate build for production and testing">
+      <option name="closed" value="true" />
+      <created>1737995676781</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1737995676781</updated>
+    </task>
+    <task id="LOCAL-00011" summary="fix: fix pipeline dependency issue">
+      <option name="closed" value="true" />
+      <created>1738054079329</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1738054079329</updated>
+    </task>
+    <task id="LOCAL-00012" summary="refactor: removed Export property from the PhotoBlogApplicationApi output in the SAM template">
+      <option name="closed" value="true" />
+      <created>1738055459004</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1738055459004</updated>
+    </task>
+    <task id="LOCAL-00013" summary="feat: add primary, staging buckets and dynamoDB table resources">
+      <option name="closed" value="true" />
+      <created>1738074747958</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1738074747958</updated>
+    </task>
+    <task id="LOCAL-00014" summary="feat: add GSI on dynamoDB table">
+      <option name="closed" value="true" />
+      <created>1738075402941</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1738075402941</updated>
+    </task>
+    <task id="LOCAL-00015" summary="feat: add s3 and dynamo environment variable and polices to lambda function">
+      <option name="closed" value="true" />
+      <created>1738077078249</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1738077078249</updated>
+    </task>
+    <task id="LOCAL-00016" summary="chore: add dependencies for dynamodb, s3 and lombok">
+      <option name="closed" value="true" />
+      <created>1738077127323</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1738077127323</updated>
+    </task>
+    <task id="LOCAL-00017" summary="feat: update application.properties with env. variables">
+      <option name="closed" value="true" />
+      <created>1738077176732</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1738077176732</updated>
+    </task>
+    <task id="LOCAL-00018" summary="feat: add dynamodb and s3 client configuration">
+      <option name="closed" value="true" />
+      <created>1738077359196</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1738077359196</updated>
+    </task>
+    <task id="LOCAL-00019" summary="feat: add endpoint for photo upload">
+      <option name="closed" value="true" />
+      <created>1738077443539</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1738077443539</updated>
+    </task>
+    <task id="LOCAL-00020" summary="feat: add service for photo upload">
+      <option name="closed" value="true" />
+      <created>1738077526740</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1738077526740</updated>
+    </task>
+    <task id="LOCAL-00021" summary="feat: add repository service to interact with dynamodb">
+      <option name="closed" value="true" />
+      <created>1738077594756</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1738077594757</updated>
+    </task>
+    <task id="LOCAL-00022" summary="feat: add service to interact with s3">
+      <option name="closed" value="true" />
+      <created>1738077643582</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1738077643582</updated>
+    </task>
+    <task id="LOCAL-00023" summary="feat: add dto for photo upload">
+      <option name="closed" value="true" />
+      <created>1738077682205</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1738077682205</updated>
+    </task>
+    <task id="LOCAL-00024" summary="refactor: restructure folder structure for better organization">
+      <option name="closed" value="true" />
+      <created>1738078782833</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1738078782833</updated>
+    </task>
+    <task id="LOCAL-00025" summary="chore: remove build.gradle file">
+      <option name="closed" value="true" />
+      <created>1738079193222</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1738079193222</updated>
+    </task>
+    <task id="LOCAL-00026" summary="fix: fix syntax error in sam template">
+      <option name="closed" value="true" />
+      <created>1738079616411</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1738079616411</updated>
+    </task>
+    <task id="LOCAL-00027" summary="fix: fix syntax error in sam template">
+      <option name="closed" value="true" />
+      <created>1738079899882</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1738079899882</updated>
+    </task>
+    <task id="LOCAL-00028" summary="fix: fix lambda policy syntax">
+      <option name="closed" value="true" />
+      <created>1738080340132</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1738080340132</updated>
+    </task>
+    <task id="LOCAL-00029" summary="refactor: return a valid string after a file has been uploaded">
+      <option name="closed" value="true" />
+      <created>1738081434355</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1738081434355</updated>
+    </task>
+    <task id="LOCAL-00030" summary="feat: add lambda function handler to for image processing">
+      <option name="closed" value="true" />
+      <created>1738150322865</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1738150322865</updated>
+    </task>
+    <task id="LOCAL-00031" summary="refactor: refactor folder structure">
+      <option name="closed" value="true" />
+      <created>1738161098042</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1738161098042</updated>
+    </task>
+    <task id="LOCAL-00032" summary="refactor: refactor folder structure">
+      <option name="closed" value="true" />
+      <created>1738161236431</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1738161236431</updated>
+    </task>
+    <option name="localTasksCounter" value="33" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="feat: add pipeline.yaml for CI/CD setup" />
+    <MESSAGE value="chore: rename template.yml to template.yaml" />
+    <MESSAGE value="chore: correct indentation issues in SAM template" />
+    <MESSAGE value="feat: add dev branch to pipeline.yaml" />
+    <MESSAGE value="feat: separate build for production and testing" />
+    <MESSAGE value="fix: fix pipeline dependency issue" />
+    <MESSAGE value="refactor: removed Export property from the PhotoBlogApplicationApi output in the SAM template" />
+    <MESSAGE value="feat: add primary, staging buckets and dynamoDB table resources" />
+    <MESSAGE value="feat: add GSI on dynamoDB table" />
+    <MESSAGE value="feat: add s3 and dynamo environment variable and polices to lambda function" />
+    <MESSAGE value="chore: add dependencies for dynamodb, s3 and lombok" />
+    <MESSAGE value="feat: update application.properties with env. variables" />
+    <MESSAGE value="feat: add dynamodb and s3 client configuration" />
+    <MESSAGE value="feat: add endpoint for photo upload" />
+    <MESSAGE value="feat: add service for photo upload" />
+    <MESSAGE value="feat: add repository service to interact with dynamodb" />
+    <MESSAGE value="feat: add service to interact with s3" />
+    <MESSAGE value="feat: add dto for photo upload" />
+    <MESSAGE value="refactor: restructure folder structure for better organization" />
+    <MESSAGE value="chore: remove build.gradle file" />
+    <MESSAGE value="fix: fix syntax error in sam template" />
+    <MESSAGE value="fix: fix lambda policy syntax" />
+    <MESSAGE value="refactor: return a valid string after a file has been uploaded" />
+    <MESSAGE value="feat: add lambda function handler to for image processing" />
+    <MESSAGE value="refactor: refactor folder structure" />
+    <option name="LAST_COMMIT_MESSAGE" value="refactor: refactor folder structure" />
+  </component>
+</project>

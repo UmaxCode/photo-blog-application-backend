@@ -1,0 +1,19 @@
+{
+  "Comment": "State machine for image processing with retries and email notification on failure",
+  "StartAt": "ProcessImage",
+  "States": {
+    "ProcessImage": {
+      "Type": "Task",
+      "Resource": "${ImageProcessingLambda}",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 300,
+          "MaxAttempts": 2,
+          "BackoffRate": 1.0
+        }
+      ],
+      "End": true
+    }
+  }
+}
