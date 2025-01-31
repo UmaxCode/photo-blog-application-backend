@@ -3,15 +3,20 @@ package org.umaxcode;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,15 +28,15 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
     private final S3Client s3Client;
     private final DynamoDbClient dynamoDbClient;
     private final String tableName;
-    private final String stageBucketName;
     private final String primaryBucketName;
+    private final String awsRegion;
 
     public ImageProcessorLambdaHandler() {
         this.s3Client = S3Client.create();
         this.dynamoDbClient = DynamoDbClient.create();
         this.tableName = System.getenv("AWS_DYNAMODB_TABLE_NAME");
-        this.stageBucketName = System.getenv("AWS_S3_STAGE_BUCKET_NAME");
         this.primaryBucketName = System.getenv("AWS_S3_PRIMARY_BUCKET_NAME");
+        this.awsRegion = System.getenv("AWS_REGION");
     }
 
     @Override
@@ -47,20 +52,12 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
             String bucketName = (String) bucket.get("name");
             String objectKey = (String) object.get("key");
 
-            Map<String, String> metadata = getS3ObjectMetadata(bucketName, objectKey, context);
-            context.getLogger().log("Email: " + metadata.get("email"));
-            context.getLogger().log("FirstName: " + metadata.get("firstname"));
-            context.getLogger().log("LastName: " + metadata.get("lastname"));
+            // Add watermark to image, save processed image and return url
+            String processedImageUrl = processPhotoAndReturnUrl(bucketName, objectKey, context);
 
-            String email = metadata.get("email");
-            String firstName = metadata.get("firstname");
-            String lastName = metadata.get("lastname");
+            context.getLogger().log("Processed image URL: " + processedImageUrl);
 
-            // Add watermark to image
-            String processedImageUrl = processPhoto(bucketName, objectKey, context);
-
-            // Store processImage in dynamoDB
-            storePhoto(processedImageUrl, email, context);
+            //:TODO delete unprocess image from staging bucket
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -68,23 +65,28 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         return null;
     }
 
-    private Map<String, String> getS3ObjectMetadata(String bucketName, String objectKey, Context context) {
+    private String processPhotoAndReturnUrl(String bucketName, String objectKey, Context context) throws IOException {
 
-        // Query S3 metadata
-        HeadObjectRequest headRequest = HeadObjectRequest.builder()
-                .bucket(bucketName)
-                .key(objectKey)
-                .build();
+        ResponseInputStream<GetObjectResponse> s3ObjectResponse = getS3Object(bucketName, objectKey, context);
 
-        HeadObjectResponse response = s3Client.headObject(headRequest);
+        Map<String, String> metadata = s3ObjectResponse.response().metadata();
+        String email = metadata.get("email");
+        String firstName = metadata.get("firstname");
+        String lastName = metadata.get("lastname");
+        String fullName = firstName + " " + lastName;
 
-        context.getLogger().log("Uploaded by metadata: " + response.metadata());
+        byte[] processedImageContent = addImageWatermark(s3ObjectResponse, fullName, context);
 
-        return response.metadata();
+        uploadImageToPrimaryBucket(processedImageContent, objectKey, context);
+
+        String imageUrl = "https://" + bucketName + ".s3." + this.awsRegion + ".amazonaws.com/" + objectKey;
+        storePhotoUrl(imageUrl, email, context);
+        return imageUrl;
     }
 
-    private String processPhoto(String bucketName, String objectKey, Context context) {
+    private ResponseInputStream<GetObjectResponse> getS3Object(String bucketName, String objectKey, Context context) {
 
+        // Query S3 metadata
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(objectKey)
@@ -94,16 +96,60 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
 
         context.getLogger().log("Metadata: " + objectResponse.response().metadata());
 
-        return "url-path";
+        return objectResponse;
     }
 
-    private void storePhoto(String photoUrl, String owner, Context context) {
+
+    private byte[] addImageWatermark(ResponseInputStream<GetObjectResponse> s3ObjectResponse, String fullName, Context context) throws IOException {
+
+        BufferedImage originalImage = ImageIO.read(s3ObjectResponse);
+
+        // Create new watermarked image
+        BufferedImage watermarkedImage = new BufferedImage(originalImage.getWidth(),
+                originalImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g2d = watermarkedImage.createGraphics();
+        g2d.drawImage(originalImage, 0, 0, null);
+
+        // Set watermark properties
+        g2d.setFont(new Font("Arial", Font.BOLD, 50));
+        g2d.setColor(new Color(255, 0, 0, 100)); // Red with transparency
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+
+        // Position the watermark at the bottom right
+        int x = originalImage.getWidth() - 300;
+        int y = originalImage.getHeight() - 50;
+
+        g2d.drawString(fullName, x, y);
+        g2d.dispose();
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ImageIO.write(watermarkedImage, "png", outputStream);
+        context.getLogger().log("Watermark added to imag");
+        return outputStream.toByteArray();
+    }
+
+    private void uploadImageToPrimaryBucket(byte[] imageContent, String objectKey, Context context) {
+
+        // Upload the image back to S3
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(primaryBucketName)
+                .key(objectKey)
+                .contentType("image/png")
+                .build();
+
+        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(imageContent));
+
+        context.getLogger().log("Watermarked image uploaded to: " + primaryBucketName + "/" + objectKey);
+    }
+
+    private void storePhotoUrl(String photoUrl, String owner, Context context) {
 
         Map<String, AttributeValue> item = new HashMap<>();
         item.put("picId", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
         item.put("picUrl", AttributeValue.builder().s(photoUrl).build());
         item.put("owner", AttributeValue.builder().s(owner).build());
-        item.put("date", AttributeValue.builder().s(LocalDateTime.now().toString()).build());
+        item.put("dateOfUpload", AttributeValue.builder().s(LocalDateTime.now().toString()).build());
 
         PutItemRequest putRequest = PutItemRequest.builder()
                 .tableName(tableName)
@@ -111,6 +157,6 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
                 .build();
 
         dynamoDbClient.putItem(putRequest);
-        context.getLogger().log("Stored photo: " + photoUrl);
+        context.getLogger().log("Photo stored in dynamoDB");
     }
 }
