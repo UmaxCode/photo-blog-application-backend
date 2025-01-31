@@ -2,6 +2,9 @@ package org.umaxcode;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.umaxcode.exception.ImageProcessingException;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -32,6 +35,7 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
     private final String tableName;
     private final String primaryBucketName;
     private final String awsRegion;
+    private final ObjectMapper objectMapper;
 
     public ImageProcessorLambdaHandler() {
         this.s3Client = S3Client.create();
@@ -39,37 +43,51 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         this.tableName = System.getenv("AWS_DYNAMODB_TABLE_NAME");
         this.primaryBucketName = System.getenv("AWS_S3_PRIMARY_BUCKET_NAME");
         this.awsRegion = System.getenv("AWS_REGION");
+        this.objectMapper = new ObjectMapper();
     }
 
     @Override
     public Void handleRequest(Map<String, Object> event, Context context) {
         context.getLogger().log("Processing event: " + event);
 
-        try {
-            // Extract S3 bucket name and object key from event
-            Map<String, Object> detail = (Map<String, Object>) event.get("detail");
-            Map<String, Object> bucket = (Map<String, Object>) detail.get("bucket");
-            Map<String, Object> object = (Map<String, Object>) detail.get("object");
+        // Extract S3 bucket name and object key from event
+        Map<String, Object> detail = (Map<String, Object>) event.get("detail");
+        Map<String, Object> bucket = (Map<String, Object>) detail.get("bucket");
+        Map<String, Object> object = (Map<String, Object>) detail.get("object");
 
-            String bucketName = (String) bucket.get("name");
-            String objectKey = (String) object.get("key");
+        String objectKey = (String) object.get("key");
+        String bucketName = (String) bucket.get("name");
+
+        ResponseInputStream<GetObjectResponse> s3ObjectResponse = getS3Object(bucketName, objectKey, context);
+
+        Map<String, String> metadata = s3ObjectResponse.response().metadata();
+        String email = metadata.get("email");
+
+        try {
 
             // Add watermark to image, save processed image and return url
-            String processedImageUrl = processPhotoAndReturnUrl(bucketName, objectKey, context);
+            String processedImageUrl = processPhotoAndReturnUrl(s3ObjectResponse, bucketName, objectKey, context);
 
             context.getLogger().log("Processed image URL: " + processedImageUrl);
 
             //:TODO delete unprocess image from staging bucket
 
         } catch (Exception ex) {
-            ex.printStackTrace();
+
+            Map<String, String> errorDetails = new HashMap<>();
+            errorDetails.put("error", ex.getMessage());
+            errorDetails.put("email", email);
+            errorDetails.put("objectKey", objectKey);
+            try {
+                throw new ImageProcessingException(objectMapper.writeValueAsString(errorDetails));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
         return null;
     }
 
-    private String processPhotoAndReturnUrl(String bucketName, String objectKey, Context context) throws IOException {
-
-        ResponseInputStream<GetObjectResponse> s3ObjectResponse = getS3Object(bucketName, objectKey, context);
+    private String processPhotoAndReturnUrl(ResponseInputStream<GetObjectResponse> s3ObjectResponse, String bucketName, String objectKey, Context context) throws IOException {
 
         Map<String, String> metadata = s3ObjectResponse.response().metadata();
         String email = metadata.get("email");
