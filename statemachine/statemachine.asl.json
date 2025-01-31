@@ -7,12 +7,31 @@
       "Resource": "${ImageProcessingLambda}",
       "Retry": [
         {
-          "ErrorEquals": ["States.TaskFailed"],
+          "ErrorEquals": [
+            "States.TaskFailed"
+          ],
           "IntervalSeconds": 300,
           "MaxAttempts": 2,
           "BackoffRate": 1.0
         }
       ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.TaskFailed"
+          ],
+          "Next": "NotifyFailure",
+          "ResultPath": "$"
+        }
+      ],
+      "End": true
+    },
+    "NotifyFailure": {
+      "Type": "Task",
+      "Resource": "${ImageProcessingFailureNotificationFunction}",
+      "Parameters": {
+        "errorDetails.$": "$"
+      },
       "End": true
     }
   }
