@@ -222,6 +222,28 @@ Resources:
           AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
           AWS_S3_PRIMARY_BUCKET_NAME: !Sub ${AWS::StackName}-primary-bucket
 
+  ImageProcessingFailureTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-ImgProFaiTopic
+      DisplayName: Image Processing Failure Notifications Topic
+
+  ImageProcessingFailureNotificationFunction: # Lambda function for sending notification for fail image processing
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-imageProcessor
+      Handler: org.umaxcode.ImageProcessingFailureNotificationFunction::handleRequest
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sns:publish
+              Resource: !Ref ImageProcessingFailureTopic
+      CodeUri: statemachine
+      Environment:
+        Variables:
+          IMG_PRO_NOTIFICATION_TOPIC_ARN: !Ref ImageProcessingFailureTopic
 
   PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
     Type: AWS::S3::Bucket
