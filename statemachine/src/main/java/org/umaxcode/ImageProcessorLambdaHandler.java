@@ -17,7 +17,9 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -112,27 +114,40 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         g2d.drawImage(originalImage, 0, 0, null);
 
         // Set watermark properties
-        Font font = new Font("Arial", Font.BOLD, 50);
+        Font font = new Font("Arial", Font.BOLD, 25); // Smaller font size
         g2d.setFont(font);
         g2d.setColor(new Color(255, 0, 0, 100)); // Red with transparency
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
 
+        // Get the current date
+        String currentDate = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+
+        // Create the watermark text
+        String line1 = "Owner: " + fullName;
+        String line2 = "Date of Upload: " + currentDate;
+
         // Get the FontMetrics to calculate the width and height of the text
         FontMetrics fontMetrics = g2d.getFontMetrics();
-        int textWidth = fontMetrics.stringWidth(fullName);
+        int textWidthLine1 = fontMetrics.stringWidth(line1);
+        int textWidthLine2 = fontMetrics.stringWidth(line2);
         int textHeight = fontMetrics.getHeight();
 
-        // Calculate the position to center the text
-        int x = (originalImage.getWidth() - textWidth) / 2;
-        int y = (originalImage.getHeight() - textHeight) / 2 + fontMetrics.getAscent();
+        // Calculate positions for bottom-right placement
+        int margin = 30; // Margin from the bottom and right edges
+        int xLine1 = originalImage.getWidth() - textWidthLine1 - margin; // Bottom-right for line 1
+        int xLine2 = originalImage.getWidth() - textWidthLine2 - margin; // Bottom-right for line 2
+        int yLine1 = originalImage.getHeight() - textHeight * 2 - margin; // First line position
+        int yLine2 = originalImage.getHeight() - textHeight - margin; // Second line position
 
         // Draw the text
-        g2d.drawString(fullName, x, y);
+        g2d.drawString(line1, xLine1, yLine1);
+        g2d.drawString(line2, xLine2, yLine2);
+
         g2d.dispose();
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ImageIO.write(watermarkedImage, "png", outputStream);
-        context.getLogger().log("Watermark added to image");
+        context.getLogger().log("Watermark added to image at bottom-right");
         return outputStream.toByteArray();
     }
 
