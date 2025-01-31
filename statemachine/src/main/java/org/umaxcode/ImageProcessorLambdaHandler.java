@@ -112,20 +112,27 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         g2d.drawImage(originalImage, 0, 0, null);
 
         // Set watermark properties
-        g2d.setFont(new Font("Arial", Font.BOLD, 50));
+        Font font = new Font("Arial", Font.BOLD, 50);
+        g2d.setFont(font);
         g2d.setColor(new Color(255, 0, 0, 100)); // Red with transparency
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
 
-        // Position the watermark at the bottom right
-        int x = originalImage.getWidth() - 300;
-        int y = originalImage.getHeight() - 50;
+        // Get the FontMetrics to calculate the width and height of the text
+        FontMetrics fontMetrics = g2d.getFontMetrics();
+        int textWidth = fontMetrics.stringWidth(fullName);
+        int textHeight = fontMetrics.getHeight();
 
+        // Calculate the position to center the text
+        int x = (originalImage.getWidth() - textWidth) / 2;
+        int y = (originalImage.getHeight() - textHeight) / 2 + fontMetrics.getAscent();
+
+        // Draw the text
         g2d.drawString(fullName, x, y);
         g2d.dispose();
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ImageIO.write(watermarkedImage, "png", outputStream);
-        context.getLogger().log("Watermark added to imag");
+        context.getLogger().log("Watermark added to image");
         return outputStream.toByteArray();
     }
 
