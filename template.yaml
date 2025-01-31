@@ -232,7 +232,7 @@ Resources:
   ImageProcessingFailureNotificationFunction: # Lambda function for sending notification for fail image processing
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-imageProcessor
+      FunctionName: !Sub ${AWS::StackName}-imgProNotificationFunction
       Handler: org.umaxcode.ImageProcessingFailureNotificationFunction::handleRequest
       Policies:
         - AWSLambdaBasicExecutionRole
