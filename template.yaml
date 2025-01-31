@@ -4,12 +4,26 @@ Description: AWS Serverless Spring Boot 2 API - org.umaxcode::photo-blog-applica
 Globals:
   Api:
     EndpointConfiguration: REGIONAL
+    BinaryMediaTypes:
+      - multipart/form-data
   Function:
     Runtime: java21
     MemorySize: 512
     Timeout: 30
 
 Parameters:
+  DynamoTableName:
+    Description: Table name of DynamoDB Table
+    Type: String
+    Default: picturesInfo
+  PrimaryRegion:
+    Description: Primary region for deployment
+    Type: String
+    Default: eu-central-1
+  DRRegion:
+    Description: Disaster recovery region for failover
+    Type: String
+    Default: eu-west-1
   CognitoCallbackURL:
     Description: Cognito callback url
     Type: String
@@ -21,11 +35,21 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-APILambda
-      Handler: org.umaxcode.lambda_apiGateway.StreamLambdaHandler::handleRequest
-      Runtime: java21
+      Handler: org.umaxcode.StreamLambdaHandler::handleRequest
       Policies:
         - AWSLambdaBasicExecutionRole
-      CodeUri: .
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoTableName
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource: !Sub ${StagingBucket.Arn}/*
+      CodeUri: photo_lambda
+      Environment:
+        Variables:
+          AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
+          AWS_S3_STAGE_BUCKET_NAME: !Sub ${AWS::StackName}-staging-bucket
       Events:
         ProxyResource:
           Type: Api
@@ -101,6 +125,132 @@ Resources:
       Domain: !Sub ${AWS::StackName}-user-pool-domain
       UserPoolId: !Ref UserPool
 
+  PicturesGlobalTable: # DynamoDB Global Table
+    Type: AWS::DynamoDB::GlobalTable
+    Properties:
+      TableName: !Ref DynamoTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: picId
+          AttributeType: S
+        - AttributeName: owner
+          AttributeType: S
+        - AttributeName: picUrl
+          AttributeType: S
+      KeySchema:
+        - AttributeName: picId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ownerIndex
+          KeySchema:
+            - AttributeName: owner
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: picUrlIndex
+          KeySchema:
+            - AttributeName: picUrl
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Replicas:
+        - Region: !Ref PrimaryRegion
+        - Region: !Ref DRRegion
+      SSESpecification:
+        SSEEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+
+  StagingBucket: # Staging S3 Bucket (for uploading images before processing)
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-staging-bucket
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+
+  ImageProcessorStateMachine: # Statemachine for executing the image processing function
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/statemachine.asl.json
+      DefinitionSubstitutions:
+        ImageProcessingLambda: !GetAtt ProcessImageFunction.Arn
+        ImageProcessingFailureNotificationLambda: !GetAtt ImageProcessingFailureNotificationFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ProcessImageFunction
+      Events:
+        StateChange:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: default
+            Pattern:
+              source:
+                - aws.s3
+              detail-type:
+                - Object Created
+              detail:
+                bucket:
+                  name:
+                    - !Ref StagingBucket
+
+  ProcessImageFunction: # Lambda function for processing uploaded images
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-imageProcessor
+      Handler: org.umaxcode.ImageProcessorLambdaHandler::handleRequest
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:DeleteObject
+              Resource: !Sub ${StagingBucket.Arn}/*
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource: !Sub ${PrimaryBucket.Arn}/*
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:PutItem
+            Resource: !GetAtt PicturesGlobalTable.Arn
+      CodeUri: statemachine
+      Environment:
+        Variables:
+          AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
+          AWS_S3_PRIMARY_BUCKET_NAME: !Sub ${AWS::StackName}-primary-bucket
+
+  ImageProcessingFailureTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-ImgProFaiTopic
+      DisplayName: Image Processing Failure Notifications Topic
+
+  ImageProcessingFailureNotificationFunction: # Lambda function for sending notification for fail image processing
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-imgProNotificationFunction
+      Handler: org.umaxcode.ImageProcessingFailureNotificationFunction::handleRequest
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sns:publish
+              Resource: !Ref ImageProcessingFailureTopic
+      CodeUri: statemachine
+      Environment:
+        Variables:
+          IMG_PRO_NOTIFICATION_TOPIC_ARN: !Ref ImageProcessingFailureTopic
+
+  PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-primary-bucket
+
 
 Outputs:
   PhotoBlogApplicationApi:
@@ -118,4 +268,14 @@ Outputs:
   CognitoLoginURL:
     Description: Cognito User Pool Application Client Hosted Login UI URL
     Value: !Sub "https://${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${UserPoolClient}&response_type=code&redirect_uri=${CognitoCallbackURL}"
+
+  StagingBucket:
+    Description: "S3 bucket for holding unprocessed uploaded images"
+    Value: !Ref StagingBucket
+
+  PrimaryBucket:
+    Description: "S3 bucket for holding processed upload images"
+    Value: !Ref PrimaryBucket
+
+
 
