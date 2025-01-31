@@ -175,6 +175,7 @@ Resources:
       DefinitionUri: statemachine/statemachine.asl.json
       DefinitionSubstitutions:
         ImageProcessingLambda: !GetAtt ProcessImageFunction.Arn
+        ImageProcessingFailureNotificationLambda: !GetAtt ImageProcessingFailureNotificationFunction.Arn
       Policies:
         - LambdaInvokePolicy:
             FunctionName: !Ref ProcessImageFunction

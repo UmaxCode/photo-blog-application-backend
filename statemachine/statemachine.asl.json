@@ -28,7 +28,7 @@
     },
     "NotifyFailure": {
       "Type": "Task",
-      "Resource": "${ImageProcessingFailureNotificationFunction}",
+      "Resource": "${ImageProcessingFailureNotificationLambda}",
       "Parameters": {
         "errorDetails.$": "$"
       },
