@@ -44,7 +44,7 @@ public class WebSocketConDisLambdaHandler implements RequestHandler<APIGatewayV2
                 handleConnect(connectionId, "example@gmail.com");
                 break;
             case "$disconnect":
-                handleDisconnect(connectionId);
+                handleDisconnect("example@gmail.com");
                 break;
             default:
                 return errorResponse;
@@ -66,10 +66,10 @@ public class WebSocketConDisLambdaHandler implements RequestHandler<APIGatewayV2
         dynamoDbClient.putItem(putItemRequest);
     }
 
-    private void handleDisconnect(String connectionId) {
+    private void handleDisconnect(String email) {
         // Remove the connectionId from DynamoDB
         Map<String, AttributeValue> key = new HashMap<>();
-        key.put("connectionId", AttributeValue.builder().s(connectionId).build());
+        key.put("email", AttributeValue.builder().s(email).build());
         DeleteItemRequest deleteItemRequest = DeleteItemRequest.builder()
                 .tableName(websocketConnectionTable)
                 .key(key)
