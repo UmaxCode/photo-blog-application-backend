@@ -217,11 +217,25 @@ Resources:
             Action:
               - dynamodb:PutItem
             Resource: !GetAtt PicturesGlobalTable.Arn
+        - Statement:
+            - Effect: Allow
+              Action:
+                - execute-api:ManageConnections
+              Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
       CodeUri: statemachine
       Environment:
         Variables:
           AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
           AWS_S3_PRIMARY_BUCKET_NAME: !Sub ${AWS::StackName}-primary-bucket
+          WEBSOCKET_CON_TABLE_NAME: !Ref WebSocketConnectionsTable
+          API_GATEWAY_WEBSOCKET_ENDPOINT: !Join
+            - ""
+            - - "https://"
+              - !Ref WebSocketApi
+              - ".execute-api."
+              - !Ref "AWS::Region"
+              - ".amazonaws.com/"
+              - !Ref WebSocketStage
 
   ImageProcessingFailureTopic:
     Type: AWS::SNS::Topic
