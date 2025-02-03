@@ -299,7 +299,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${AWS::StackName}-websocketConDisFunction
       Handler: org.umaxcode.WebSocketConDisLambdaHandler::handleRequest
-      CodeUri: .
+      CodeUri: statemachine
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
