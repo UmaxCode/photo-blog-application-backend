@@ -6,9 +6,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.umaxcode.exception.ImageProcessingException;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.apigatewaymanagementapi.ApiGatewayManagementApiClient;
+import software.amazon.awssdk.services.apigatewaymanagementapi.model.GoneException;
+import software.amazon.awssdk.services.apigatewaymanagementapi.model.PostToConnectionRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -20,6 +25,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -33,9 +39,11 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
     private final S3Client s3Client;
     private final DynamoDbClient dynamoDbClient;
     private final String tableName;
+    private final String websocketMessageEndpoint;
     private final String primaryBucketName;
     private final String awsRegion;
     private final ObjectMapper objectMapper;
+    private final String connectTableName;
 
     public ImageProcessorLambdaHandler() {
         this.s3Client = S3Client.create();
@@ -44,6 +52,8 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         this.primaryBucketName = System.getenv("AWS_S3_PRIMARY_BUCKET_NAME");
         this.awsRegion = System.getenv("AWS_REGION");
         this.objectMapper = new ObjectMapper();
+        this.websocketMessageEndpoint = System.getenv("API_GATEWAY_WEBSOCKET_ENDPOINT");
+        this.connectTableName = System.getenv("WEBSOCKET_CON_TABLE_NAME");
     }
 
     @Override
@@ -69,6 +79,8 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
             String processedImageUrl = processPhotoAndReturnUrl(s3ObjectResponse, bucketName, objectKey, context);
 
             context.getLogger().log("Processed image URL: " + processedImageUrl);
+
+            sendProcessedPhotoUrlToClient(email, processedImageUrl);
 
             //:TODO delete unprocess image from staging bucket
 
@@ -198,5 +210,42 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
 
         dynamoDbClient.putItem(putRequest);
         context.getLogger().log("Photo stored in dynamoDB");
+    }
+
+    private void sendProcessedPhotoUrlToClient(String email, String imageUrl) throws JsonProcessingException {
+
+        Map<String, AttributeValue> key = new HashMap<>();
+        key.put("email", AttributeValue.builder().s(email).build());
+        GetItemRequest request = GetItemRequest.builder()
+                .tableName(connectTableName)
+                .key(key)
+                .build();
+
+        Map<String, AttributeValue> connectionDetails = dynamoDbClient.getItem(request).item();
+
+        String connectionId = connectionDetails.get("connectionId").s();
+
+        ApiGatewayManagementApiClient client = ApiGatewayManagementApiClient.builder()
+                .endpointOverride(URI.create(websocketMessageEndpoint))
+                .build();
+
+        Map<String, String> response = new HashMap<>();
+        response.put("imgUrl", imageUrl);
+        response.put("message", "Image processed successfully");
+
+        PostToConnectionRequest postRequest = PostToConnectionRequest.builder()
+                .connectionId(connectionId)
+                .data(SdkBytes.fromUtf8String(objectMapper.writeValueAsString(response)))
+                .build();
+
+        try {
+            client.postToConnection(postRequest);
+            System.out.println("Message sent successfully!");
+        } catch (GoneException e) {
+            System.err.println("Connection is stale: ");
+        } catch (Exception e) {
+            System.err.println("General error: " + e.getMessage());
+        }
+
     }
 }
