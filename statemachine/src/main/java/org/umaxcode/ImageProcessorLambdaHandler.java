@@ -60,43 +60,54 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
     public Void handleRequest(Map<String, Object> event, Context context) {
         context.getLogger().log("Processing event: " + event);
 
-        // Extract S3 bucket name and object key from event
-        Map<String, Object> detail = (Map<String, Object>) event.get("detail");
-        Map<String, Object> bucket = (Map<String, Object>) detail.get("bucket");
-        Map<String, Object> object = (Map<String, Object>) detail.get("object");
-
-        String objectKey = (String) object.get("key");
-        String bucketName = (String) bucket.get("name");
-
-        ResponseInputStream<GetObjectResponse> s3ObjectResponse = getS3Object(bucketName, objectKey, context);
-
-        Map<String, String> metadata = s3ObjectResponse.response().metadata();
-        String email = metadata.get("email");
+        Map<String, String> errorDetails = new HashMap<>();
+        errorDetails.put("error", "Unknown error");
+        errorDetails.put("email", "example@gmail.com");
+        errorDetails.put("objectKey", "file.jpeg");
 
         try {
-
-            // Add watermark to image, save processed image and return url
-            String processedImageUrl = processPhotoAndReturnUrl(s3ObjectResponse, bucketName, objectKey, context);
-
-            context.getLogger().log("Processed image URL: " + processedImageUrl);
-
-            sendProcessedPhotoUrlToClient(email, processedImageUrl);
-
-            //:TODO delete unprocess image from staging bucket
-
-        } catch (Exception ex) {
-
-            Map<String, String> errorDetails = new HashMap<>();
-            errorDetails.put("error", ex.getMessage());
-            errorDetails.put("email", email);
-            errorDetails.put("objectKey", objectKey);
-            try {
-                throw new ImageProcessingException(objectMapper.writeValueAsString(errorDetails));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
+            throw new ImageProcessingException(objectMapper.writeValueAsString(errorDetails));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
-        return null;
+
+        // Extract S3 bucket name and object key from event
+//        Map<String, Object> detail = (Map<String, Object>) event.get("detail");
+//        Map<String, Object> bucket = (Map<String, Object>) detail.get("bucket");
+//        Map<String, Object> object = (Map<String, Object>) detail.get("object");
+//
+//        String objectKey = (String) object.get("key");
+//        String bucketName = (String) bucket.get("name");
+//
+//        ResponseInputStream<GetObjectResponse> s3ObjectResponse = getS3Object(bucketName, objectKey, context);
+//
+//        Map<String, String> metadata = s3ObjectResponse.response().metadata();
+//        String email = metadata.get("email");
+//
+//        try {
+//
+//            // Add watermark to image, save processed image and return url
+//            String processedImageUrl = processPhotoAndReturnUrl(s3ObjectResponse, bucketName, objectKey, context);
+//
+//            context.getLogger().log("Processed image URL: " + processedImageUrl);
+//
+//            sendProcessedPhotoUrlToClient(email, processedImageUrl);
+//
+//            //:TODO delete unprocess image from staging bucket
+//
+//        } catch (Exception ex) {
+//
+//            Map<String, String> errorDetails = new HashMap<>();
+//            errorDetails.put("error", ex.getMessage());
+//            errorDetails.put("email", email);
+//            errorDetails.put("objectKey", objectKey);
+//            try {
+//                throw new ImageProcessingException(objectMapper.writeValueAsString(errorDetails));
+//            } catch (JsonProcessingException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//        return null;
     }
 
     private String processPhotoAndReturnUrl(ResponseInputStream<GetObjectResponse> s3ObjectResponse, String bucketName, String objectKey, Context context) throws IOException {
