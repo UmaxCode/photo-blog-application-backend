@@ -222,6 +222,11 @@ Resources:
               Action:
                 - execute-api:ManageConnections
               Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: !GetAtt WebSocketConnectionsTable.Arn
       CodeUri: statemachine
       Environment:
         Variables:
