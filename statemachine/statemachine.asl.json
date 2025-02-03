@@ -30,7 +30,8 @@
       "Type": "Task",
       "Resource": "${ImageProcessingFailureNotificationLambda}",
       "Parameters": {
-        "errorDetails.$": "$"
+        "objectKey.$": "$.cause.errorMessage.objectKey",
+        "email.$": "$.cause.errorMessage.email"
       },
       "End": true
     }
