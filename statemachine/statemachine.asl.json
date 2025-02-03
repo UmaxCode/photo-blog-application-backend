@@ -20,18 +20,25 @@
           "ErrorEquals": [
             "States.TaskFailed"
           ],
-          "Next": "NotifyFailure",
+          "Next": "ParseErrorDetails",
           "ResultPath": "$"
         }
       ],
       "End": true
     },
+    "ParseErrorDetails": {
+      "Type": "Pass",
+      "Parameters": {
+        "errorMessage.$": "States.StringToJson($.Cause)"
+      },
+      "Next": "NotifyFailure"
+    },
     "NotifyFailure": {
       "Type": "Task",
       "Resource": "${ImageProcessingFailureNotificationLambda}",
       "Parameters": {
-        "objectKey.$": "$.cause.errorMessage.objectKey",
-        "email.$": "$.cause.errorMessage.email"
+        "objectKey.$": "$.errorMessage.objectKey",
+        "email.$": "$.errorMessage.email"
       },
       "End": true
     }
