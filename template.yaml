@@ -251,6 +251,107 @@ Resources:
     Properties:
       BucketName: !Sub ${AWS::StackName}-primary-bucket
 
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub ${AWS::StackName}-MyWebSocketApi
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: "$request.body.action"
+
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $connect
+      AuthorizationType: NONE
+      Target: !Sub
+        - integrations/${IntegrationId}
+        - IntegrationId: !Ref WebSocketIntegration
+
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $disconnect
+      AuthorizationType: NONE
+      Target: !Sub
+        - integrations/${IntegrationId}
+        - IntegrationId: !Ref WebSocketIntegration
+
+  WebSocketIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub
+        arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConnectDisconnectFunction.Arn}/invocations
+
+  WebSocketInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt ConnectDisconnectFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*"
+
+  ConnectDisconnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-websocketConDisFunction
+      Handler: org.umaxcode.WebSocketConDisLambdaHandler::handleRequest
+      CodeUri: .
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref WebSocketConnectionsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - execute-api:ManageConnections
+              Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*"
+      Environment:
+        Variables:
+          WEBSOCKET_CONNECTION_TABLE: !Ref WebSocketConnectionsTable
+
+  WebSocketConnectionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-WebSocketConnections
+      AttributeDefinitions:
+        - AttributeName: connectionId
+          AttributeType: S
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: connectionId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: emailIndex
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+
+  WebSocketDeployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    Properties:
+      ApiId: !Ref WebSocketApi
+      Description: WebSocket API Deployment
+    DependsOn:
+      - ConnectRoute
+      - DisconnectRoute
+      - WebSocketIntegration
+      - WebSocketInvokePermission
+
+  WebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      StageName: Prod
+      ApiId: !Ref WebSocketApi
+      DeploymentId: !Ref WebSocketDeployment
+      AutoDeploy: true
 
 Outputs:
   PhotoBlogApplicationApi:
@@ -277,5 +378,15 @@ Outputs:
     Description: "S3 bucket for holding processed upload images"
     Value: !Ref PrimaryBucket
 
+  WebSocketApiUrl:
+    Description: "WebSocket API URL"
+    Value: !Join
+      - ""
+      - - "wss://"
+        - !Ref WebSocketApi
+        - ".execute-api."
+        - !Ref "AWS::Region"
+        - ".amazonaws.com/"
+        - !Ref WebSocketStage
 
 
