@@ -29,7 +29,7 @@
     "ParseErrorDetails": {
       "Type": "Pass",
       "Parameters": {
-        "errorMessage.$": "States.StringToJson($.Cause)"
+        "error.$": "States.StringToJson($.Cause)"
       },
       "Next": "NotifyFailure"
     },
@@ -37,8 +37,8 @@
       "Type": "Task",
       "Resource": "${ImageProcessingFailureNotificationLambda}",
       "Parameters": {
-        "objectKey.$": "$.errorMessage.objectKey",
-        "email.$": "$.errorMessage.email"
+        "objectKey.$": "$.error.errorMessage.objectKey",
+        "email.$": "$.error.errorMessage.email"
       },
       "End": true
     }
