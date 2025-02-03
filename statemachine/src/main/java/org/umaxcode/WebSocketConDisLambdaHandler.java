@@ -41,7 +41,7 @@ public class WebSocketConDisLambdaHandler implements RequestHandler<APIGatewayV2
 
         switch (routeKey) {
             case "$connect":
-                handleConnect(connectionId, "email@gmail.com");
+                handleConnect(connectionId, "example@gmail.com");
                 break;
             case "$disconnect":
                 handleDisconnect(connectionId);
