@@ -179,6 +179,8 @@ Resources:
       Policies:
         - LambdaInvokePolicy:
             FunctionName: !Ref ProcessImageFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ImageProcessingFailureNotificationFunction
       Events:
         StateChange:
           Type: EventBridgeRule
