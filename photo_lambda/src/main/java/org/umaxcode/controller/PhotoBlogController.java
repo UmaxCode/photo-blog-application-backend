@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.umaxcode.dto.response.PhotoUploadDTo;
 import org.umaxcode.dto.response.SuccessResponse;
 import org.umaxcode.service.PhotoBlogService;
 
@@ -24,4 +25,17 @@ public class PhotoBlogController {
                 .message(uploadPicResponse)
                 .build();
     }
+
+    @GetMapping("/{id}/generate-pre-signed-url}")
+    @ResponseStatus(HttpStatus.OK)
+    public SuccessResponse generatePreSignedUrl(@PathVariable String id) {
+
+        PhotoUploadDTo generatedUrl = photoBlogService.generatePreSignedUrl(id);
+
+        return SuccessResponse.builder()
+                .message("Pre-signed url generated successfully")
+                .data(generatedUrl)
+                .build();
+    }
+
 }
