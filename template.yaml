@@ -45,11 +45,17 @@ Resources:
             Action:
               - s3:PutObject
             Resource: !Sub ${StagingBucket.Arn}/*
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource: !Sub ${PrimaryBucket.Arn}/*
       CodeUri: photo_lambda
       Environment:
         Variables:
           AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
-          AWS_S3_STAGE_BUCKET_NAME: !Sub ${AWS::StackName}-staging-bucket
+          AWS_S3_STAGE_BUCKET_NAME: !Ref StagingBucket
+          AWS_S3_PRIMARY_BUCKET_NAME: !Ref PrimaryBucket
       Events:
         ProxyResource:
           Type: Api
