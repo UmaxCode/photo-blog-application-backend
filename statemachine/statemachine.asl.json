@@ -26,26 +26,12 @@
       ],
       "End": true
     },
-    "ParseErrorCause": {
-      "Type": "Pass",
-      "Parameters": {
-        "cause.$": "States.StringToJson($.Cause)"
-      },
-      "Next": "ParseErrorDetails"
-    },
-    "ParseErrorDetails": {
-      "Type": "Pass",
-      "Parameters": {
-        "error.$": "States.StringToJson($.errorMessage)"
-      },
-      "Next": "NotifyFailure"
-    },
     "NotifyFailure": {
       "Type": "Task",
       "Resource": "${ImageProcessingFailureNotificationLambda}",
       "Parameters": {
-        "objectKey.$": "$.error.objectKey",
-        "email.$": "$.error.email"
+        "objectKey.$": "$.input.Cause.errorMessage.objectKey",
+        "email.$": "$.input.Cause.errorMessage.email"
       },
       "End": true
     }
