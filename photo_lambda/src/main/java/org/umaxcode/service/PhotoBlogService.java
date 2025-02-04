@@ -6,4 +6,6 @@ import org.umaxcode.dto.response.PhotoUploadDTo;
 public interface PhotoBlogService {
 
     String upload(MultipartFile pic);
+
+    PhotoUploadDTo generatePreSignedUrl(String id);
 }
