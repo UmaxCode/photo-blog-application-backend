@@ -10,7 +10,7 @@
           "ErrorEquals": [
             "States.TaskFailed"
           ],
-          "IntervalSeconds": 300,
+          "IntervalSeconds": 3,
           "MaxAttempts": 2,
           "BackoffRate": 1.0
         }
@@ -29,7 +29,7 @@
     "ParseErrorDetails": {
       "Type": "Pass",
       "Parameters": {
-        "error.$": "States.StringToJson($.Cause.errorMessage)"
+        "error.$": "States.StringToJson($.Cause)"
       },
       "Next": "NotifyFailure"
     },
