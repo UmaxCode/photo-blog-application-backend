@@ -26,7 +26,7 @@ public class PhotoBlogController {
                 .build();
     }
 
-    @GetMapping("/{id}/generate-pre-signed-url}")
+    @GetMapping("/{id}/generate-pre-signed-url")
     @ResponseStatus(HttpStatus.OK)
     public SuccessResponse generatePreSignedUrl(@PathVariable String id) {
 
