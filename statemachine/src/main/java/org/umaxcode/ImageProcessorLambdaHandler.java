@@ -65,11 +65,9 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         errorDetails.put("email", "example@gmail.com");
         errorDetails.put("objectKey", "file.jpeg");
 
-        try {
-            throw new ImageProcessingException(objectMapper.writeValueAsString(errorDetails));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+
+        throw new ImageProcessingException(errorDetails);
+
 
         // Extract S3 bucket name and object key from event
 //        Map<String, Object> detail = (Map<String, Object>) event.get("detail");
