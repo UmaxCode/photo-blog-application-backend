@@ -26,10 +26,17 @@
       ],
       "End": true
     },
+    "ParseErrorCause": {
+      "Type": "Pass",
+      "Parameters": {
+        "cause.$": "States.StringToJson($.Cause)"
+      },
+      "Next": "ParseErrorDetails"
+    },
     "ParseErrorDetails": {
       "Type": "Pass",
       "Parameters": {
-        "error.$": "States.StringToJson($.Cause)"
+        "error.$": "States.StringToJson($.errorMessage)"
       },
       "Next": "NotifyFailure"
     },
