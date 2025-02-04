@@ -4,12 +4,26 @@ Description: AWS Serverless Spring Boot 2 API - org.umaxcode::photo-blog-applica
 Globals:
   Api:
     EndpointConfiguration: REGIONAL
+    BinaryMediaTypes:
+      - multipart/form-data
   Function:
     Runtime: java21
     MemorySize: 512
     Timeout: 30
 
 Parameters:
+  DynamoTableName:
+    Description: Table name of DynamoDB Table
+    Type: String
+    Default: picturesInfo
+  PrimaryRegion:
+    Description: Primary region for deployment
+    Type: String
+    Default: eu-central-1
+  DRRegion:
+    Description: Disaster recovery region for failover
+    Type: String
+    Default: eu-west-1
   CognitoCallbackURL:
     Description: Cognito callback url
     Type: String
@@ -21,11 +35,21 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-APILambda
-      Handler: org.umaxcode.lambda_apiGateway.StreamLambdaHandler::handleRequest
-      Runtime: java21
+      Handler: org.umaxcode.StreamLambdaHandler::handleRequest
       Policies:
         - AWSLambdaBasicExecutionRole
-      CodeUri: .
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoTableName
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource: !Sub ${StagingBucket.Arn}/*
+      CodeUri: photo_lambda
+      Environment:
+        Variables:
+          AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
+          AWS_S3_STAGE_BUCKET_NAME: !Sub ${AWS::StackName}-staging-bucket
       Events:
         ProxyResource:
           Type: Api
@@ -101,6 +125,245 @@ Resources:
       Domain: !Sub ${AWS::StackName}-user-pool-domain
       UserPoolId: !Ref UserPool
 
+  PicturesGlobalTable: # DynamoDB Global Table
+    Type: AWS::DynamoDB::GlobalTable
+    Properties:
+      TableName: !Ref DynamoTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: picId
+          AttributeType: S
+        - AttributeName: owner
+          AttributeType: S
+        - AttributeName: picUrl
+          AttributeType: S
+      KeySchema:
+        - AttributeName: picId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ownerIndex
+          KeySchema:
+            - AttributeName: owner
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: picUrlIndex
+          KeySchema:
+            - AttributeName: picUrl
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Replicas:
+        - Region: !Ref PrimaryRegion
+        - Region: !Ref DRRegion
+      SSESpecification:
+        SSEEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+
+  StagingBucket: # Staging S3 Bucket (for uploading images before processing)
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-staging-bucket
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+
+  ImageProcessorStateMachine: # Statemachine for executing the image processing function
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/statemachine.asl.json
+      DefinitionSubstitutions:
+        ImageProcessingLambda: !GetAtt ProcessImageFunction.Arn
+        ImageProcessingFailureNotificationLambda: !GetAtt ImageProcessingFailureNotificationFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ProcessImageFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ImageProcessingFailureNotificationFunction
+      Events:
+        StateChange:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: default
+            Pattern:
+              source:
+                - aws.s3
+              detail-type:
+                - Object Created
+              detail:
+                bucket:
+                  name:
+                    - !Ref StagingBucket
+
+  ProcessImageFunction: # Lambda function for processing uploaded images
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-imageProcessor
+      Handler: org.umaxcode.ImageProcessorLambdaHandler::handleRequest
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:DeleteObject
+              Resource: !Sub ${StagingBucket.Arn}/*
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource: !Sub ${PrimaryBucket.Arn}/*
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:PutItem
+            Resource: !GetAtt PicturesGlobalTable.Arn
+        - Statement:
+            - Effect: Allow
+              Action:
+                - execute-api:ManageConnections
+              Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: !GetAtt WebSocketConnectionsTable.Arn
+      CodeUri: statemachine
+      Environment:
+        Variables:
+          AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
+          AWS_S3_PRIMARY_BUCKET_NAME: !Sub ${AWS::StackName}-primary-bucket
+          WEBSOCKET_CON_TABLE_NAME: !Ref WebSocketConnectionsTable
+          API_GATEWAY_WEBSOCKET_ENDPOINT: !Join
+            - ""
+            - - "https://"
+              - !Ref WebSocketApi
+              - ".execute-api."
+              - !Ref "AWS::Region"
+              - ".amazonaws.com/"
+              - !Ref WebSocketStage
+
+  ImageProcessingFailureTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-ImgProFaiTopic
+      DisplayName: Image Processing Failure Notifications Topic
+
+  ImageProcessingFailureNotificationFunction: # Lambda function for sending notification for fail image processing
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-imgProNotificationFunction
+      Handler: org.umaxcode.ImageProcessingFailureNotificationFunction::handleRequest
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sns:publish
+              Resource: !Ref ImageProcessingFailureTopic
+      CodeUri: statemachine
+      Environment:
+        Variables:
+          IMG_PRO_NOTIFICATION_TOPIC_ARN: !Ref ImageProcessingFailureTopic
+
+  PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-primary-bucket
+
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub ${AWS::StackName}-MyWebSocketApi
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: "$request.body.action"
+
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $connect
+      AuthorizationType: NONE
+      Target: !Sub
+        - integrations/${IntegrationId}
+        - IntegrationId: !Ref WebSocketIntegration
+
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $disconnect
+      AuthorizationType: NONE
+      Target: !Sub
+        - integrations/${IntegrationId}
+        - IntegrationId: !Ref WebSocketIntegration
+
+  WebSocketIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub
+        arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConnectDisconnectFunction.Arn}/invocations
+
+  WebSocketInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt ConnectDisconnectFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*"
+
+  ConnectDisconnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-websocketConDisFunction
+      Handler: org.umaxcode.WebSocketConDisLambdaHandler::handleRequest
+      CodeUri: statemachine
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref WebSocketConnectionsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - execute-api:ManageConnections
+              Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*"
+      Environment:
+        Variables:
+          WEBSOCKET_CONNECTION_TABLE: !Ref WebSocketConnectionsTable
+
+  WebSocketConnectionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-WebSocketConnections
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  WebSocketDeployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    Properties:
+      ApiId: !Ref WebSocketApi
+      Description: WebSocket API Deployment
+    DependsOn:
+      - ConnectRoute
+      - DisconnectRoute
+      - WebSocketIntegration
+      - WebSocketInvokePermission
+
+  WebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      StageName: Prod
+      ApiId: !Ref WebSocketApi
+      DeploymentId: !Ref WebSocketDeployment
+      AutoDeploy: true
 
 Outputs:
   PhotoBlogApplicationApi:
@@ -118,4 +381,24 @@ Outputs:
   CognitoLoginURL:
     Description: Cognito User Pool Application Client Hosted Login UI URL
     Value: !Sub "https://${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${UserPoolClient}&response_type=code&redirect_uri=${CognitoCallbackURL}"
+
+  StagingBucket:
+    Description: "S3 bucket for holding unprocessed uploaded images"
+    Value: !Ref StagingBucket
+
+  PrimaryBucket:
+    Description: "S3 bucket for holding processed upload images"
+    Value: !Ref PrimaryBucket
+
+  WebSocketApiUrl:
+    Description: "WebSocket API URL"
+    Value: !Join
+      - ""
+      - - "wss://"
+        - !Ref WebSocketApi
+        - ".execute-api."
+        - !Ref "AWS::Region"
+        - ".amazonaws.com/"
+        - !Ref WebSocketStage
+
 

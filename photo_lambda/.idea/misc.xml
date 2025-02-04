@@ -5,8 +5,6 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
-        <option value="$PROJECT_DIR$/statemachine/pom.xml" />
-        <option value="$PROJECT_DIR$/photo_lambda/pom.xml" />
       </list>
     </option>
   </component>
