@@ -125,10 +125,10 @@ Resources:
       Domain: !Sub ${AWS::StackName}-user-pool-domain
       UserPoolId: !Ref UserPool
 
-  PicturesGlobalTable: # DynamoDB Global Table
+  PicturesGlobalTable: # DynamoDB Global Table for image info
     Type: AWS::DynamoDB::GlobalTable
     Properties:
-      TableName: !Ref DynamoTableName
+      TableName: !Sub ${AWS::StackName}-${DynamoTableName}
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: picId
@@ -172,6 +172,7 @@ Resources:
   ImageProcessorStateMachine: # Statemachine for executing the image processing function
     Type: AWS::Serverless::StateMachine
     Properties:
+      Name: !Sub ${AWS::StackName}-ImgProcessorStateMachine
       DefinitionUri: statemachine/statemachine.asl.json
       DefinitionSubstitutions:
         ImageProcessingLambda: !GetAtt ProcessImageFunction.Arn
@@ -244,10 +245,10 @@ Resources:
               - ".amazonaws.com/"
               - !Ref WebSocketStage
 
-  ImageProcessingFailureTopic:
+  ImageProcessingFailureTopic: # SNS for receiving image processing failed notification
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub ${AWS::StackName}-ImgProFaiTopic
+      TopicName: !Sub ${AWS::StackName}-ImgProFailTopic
       DisplayName: Image Processing Failure Notifications Topic
 
   ImageProcessingFailureNotificationFunction: # Lambda function for sending notification for fail image processing
@@ -272,14 +273,14 @@ Resources:
     Properties:
       BucketName: !Sub ${AWS::StackName}-primary-bucket
 
-  WebSocketApi:
+  WebSocketApi: # Websocket Api for notifying the client when image processing is successful
     Type: AWS::ApiGatewayV2::Api
     Properties:
       Name: !Sub ${AWS::StackName}-MyWebSocketApi
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: "$request.body.action"
 
-  ConnectRoute:
+  ConnectRoute:  # connect route for the websocket
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref WebSocketApi
@@ -289,7 +290,7 @@ Resources:
         - integrations/${IntegrationId}
         - IntegrationId: !Ref WebSocketIntegration
 
-  DisconnectRoute:
+  DisconnectRoute: # connect route for the websocket
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref WebSocketApi
@@ -315,7 +316,7 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*"
 
-  ConnectDisconnectFunction:
+  ConnectDisconnectFunction: # Lambda function for managing the connectionId
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-websocketConDisFunction
@@ -334,7 +335,7 @@ Resources:
         Variables:
           WEBSOCKET_CONNECTION_TABLE: !Ref WebSocketConnectionsTable
 
-  WebSocketConnectionsTable:
+  WebSocketConnectionsTable: # DynamoDB table for storing connection details
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Sub ${AWS::StackName}-WebSocketConnections
