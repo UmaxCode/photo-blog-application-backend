@@ -20,7 +20,7 @@
           "ErrorEquals": [
             "States.TaskFailed"
           ],
-          "Next": "ParseErrorDetails",
+          "Next": "ParseErrorCause",
           "ResultPath": "$"
         }
       ],
