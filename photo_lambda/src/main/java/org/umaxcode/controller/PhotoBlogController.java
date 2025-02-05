@@ -38,4 +38,14 @@ public class PhotoBlogController {
                 .build();
     }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public SuccessResponse deletePhoto(@PathVariable String id) {
+
+        photoBlogService.deleteImage(id);
+        return SuccessResponse.builder()
+                .message("Image deleted successfully")
+                .build();
+    }
+
 }
