@@ -34,7 +34,7 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
 
         Map<String, AttributeValue> item = photoBlogRepository.getItem(id);
 
-        if (item != null) {
+        if (!item.isEmpty()) {
             String objectURL = item.get("picUrl").s();
             URL url = s3Service.generatePreSignedUrl(extractObjectKey(objectURL), 3);
 
