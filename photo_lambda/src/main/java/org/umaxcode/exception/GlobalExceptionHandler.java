@@ -15,7 +15,7 @@ public class GlobalExceptionHandler {
         return ErrorResponse.builder()
                 .path(request.getRequestURI())
                 .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
+                .timestamp(LocalDateTime.now().toString())
                 .build();
     }
 }
