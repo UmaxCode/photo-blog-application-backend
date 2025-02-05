@@ -39,7 +39,7 @@ Resources:
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
-            TableName: !Ref DynamoTableName
+            TableName: !Ref PicturesGlobalTable
         - Statement:
             Effect: Allow
             Action:
@@ -53,7 +53,7 @@ Resources:
       CodeUri: photo_lambda
       Environment:
         Variables:
-          AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
+          AWS_DYNAMODB_TABLE_NAME: !Ref PicturesGlobalTable
           AWS_S3_STAGE_BUCKET_NAME: !Ref StagingBucket
           AWS_S3_PRIMARY_BUCKET_NAME: !Ref PrimaryBucket
       Events:
@@ -239,8 +239,8 @@ Resources:
       CodeUri: statemachine
       Environment:
         Variables:
-          AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
-          AWS_S3_PRIMARY_BUCKET_NAME: !Sub ${AWS::StackName}-primary-bucket
+          AWS_DYNAMODB_TABLE_NAME: !Ref PicturesGlobalTable
+          AWS_S3_PRIMARY_BUCKET_NAME: !Ref PrimaryBucket
           WEBSOCKET_CON_TABLE_NAME: !Ref WebSocketConnectionsTable
           API_GATEWAY_WEBSOCKET_ENDPOINT: !Join
             - ""
