@@ -56,14 +56,14 @@ public class S3ServiceImpl implements S3Service {
     }
 
     @Override
-    public URL generatePreSignedUrl(String objectKey, int expirationInMinutes) {
+    public URL generatePreSignedUrl(String objectKey, int expirationInHours) {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(primaryBucketName)
                 .key(objectKey)
                 .build();
 
         GetObjectPresignRequest preSignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(expirationInMinutes))
+                .signatureDuration(Duration.ofHours(expirationInHours))
                 .getObjectRequest(getObjectRequest)
                 .build();
 
