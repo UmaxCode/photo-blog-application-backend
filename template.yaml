@@ -49,6 +49,7 @@ Resources:
             Effect: Allow
             Action:
               - s3:GetObject
+              - s3:DeleteObject
             Resource: !Sub ${PrimaryBucket.Arn}/*
       CodeUri: photo_lambda
       Environment:
