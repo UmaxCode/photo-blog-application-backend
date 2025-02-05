@@ -7,4 +7,6 @@ import java.util.Map;
 public interface PhotoBlogRepository {
 
     Map<String, AttributeValue> getItem(String id);
+
+    Map<String, AttributeValue> deleteItem(String id);
 }
