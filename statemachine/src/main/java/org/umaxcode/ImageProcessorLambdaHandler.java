@@ -87,6 +87,7 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         } catch (Exception ex) {
 
             Map<String, String> errorDetails = new HashMap<>();
+            errorDetails.put("reason", ex.getMessage());
             errorDetails.put("email", email);
             errorDetails.put("objectKey", objectKey);
             try {
