@@ -33,11 +33,11 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
 
         Map<String, AttributeValue> item = photoBlogRepository.getItem(id);
 
-        String objectKey = item.get("picUrl").s();
-        URL url = s3Service.generatePreSignedUrl(extractObjectKey(objectKey), 60);
+        String objectURL = item.get("picUrl").s();
+        URL url = s3Service.generatePreSignedUrl(extractObjectKey(objectURL), 60);
 
         return PhotoUploadDTo.builder()
-                .picUrl(url.getPath())
+                .picUrl(url.toString())
                 .build();
     }
 
