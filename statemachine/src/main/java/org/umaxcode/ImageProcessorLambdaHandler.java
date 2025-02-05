@@ -28,10 +28,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 
 public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, Object>, Void> {
@@ -183,16 +180,35 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
 
     private void uploadImageToPrimaryBucket(byte[] imageContent, String objectKey, Context context) {
 
+        String extension = getImageExtension(objectKey);
+        String contentType = String.format("image/%s", extension);
+
         // Upload the image back to S3
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(primaryBucketName)
                 .key(objectKey)
-                .contentType("image/png")
+                .contentType(contentType)
                 .build();
 
         s3Client.putObject(putObjectRequest, RequestBody.fromBytes(imageContent));
 
         context.getLogger().log("Watermarked image uploaded to: " + primaryBucketName + "/" + objectKey);
+    }
+
+    private String getImageExtension(String objectKey) {
+
+        Set<String> VALID_IMAGE_EXTENSIONS = Set.of("jpeg", "jpg", "png", "gif", "bmp", "webp", "tiff", "svg");
+        if (objectKey == null) {
+            throw new ImageProcessingException("No object key");
+        }
+
+        String extension = objectKey.substring(objectKey.lastIndexOf('.') + 1).toLowerCase();
+
+        if (VALID_IMAGE_EXTENSIONS.contains(extension)) {
+            return extension; // Valid image extension
+        }
+
+        throw new ImageProcessingException("Unsupported image extension: " + extension);
     }
 
     private void storePhotoUrl(String photoUrl, String owner, Context context) {
