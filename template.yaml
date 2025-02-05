@@ -54,8 +54,8 @@ Resources:
       Environment:
         Variables:
           AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
-          AWS_S3_STAGE_BUCKET_NAME: !Sub ${AWS::StackName}-staging-bucket
-          AWS_S3_PRIMARY_BUCKET_NAME: !Sub ${AWS::StackName}-primary-bucket
+          AWS_S3_STAGE_BUCKET_NAME: !Ref StagingBucket
+          AWS_S3_PRIMARY_BUCKET_NAME: !Ref PrimaryBucket
       Events:
         ProxyResource:
           Type: Api
