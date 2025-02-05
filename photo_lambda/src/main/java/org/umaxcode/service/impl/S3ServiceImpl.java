@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.umaxcode.service.S3Service;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
@@ -68,5 +69,16 @@ public class S3ServiceImpl implements S3Service {
                 .build();
 
         return s3Presigner.presignGetObject(preSignRequest).url();
+    }
+
+    @Override
+    public void deleteObject(String objectKey) {
+
+        DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                .bucket(primaryBucketName)
+                .key(objectKey)
+                .build();
+
+        s3Client.deleteObject(deleteRequest);
     }
 }

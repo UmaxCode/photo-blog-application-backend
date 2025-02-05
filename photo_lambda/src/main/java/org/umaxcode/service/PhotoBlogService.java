@@ -8,4 +8,6 @@ public interface PhotoBlogService {
     String upload(MultipartFile pic);
 
     PhotoUploadDTo generatePreSignedUrl(String id);
+
+    void deleteImage(String id);
 }
