@@ -223,6 +223,10 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
 
         Map<String, AttributeValue> connectionDetails = dynamoDbClient.getItem(request).item();
 
+        if (connectionDetails == null || connectionDetails.isEmpty()) { // don't notify frontend when websocket connection is not established
+            return;
+        }
+
         String connectionId = connectionDetails.get("connectionId").s();
 
         ApiGatewayManagementApiClient client = ApiGatewayManagementApiClient.builder()
