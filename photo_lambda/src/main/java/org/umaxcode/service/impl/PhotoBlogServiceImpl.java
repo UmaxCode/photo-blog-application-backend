@@ -54,6 +54,7 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
         if (!deleteResponse.isEmpty()) {
             String objectURL = deleteResponse.get("picUrl").s();
             s3Service.deleteObject(extractObjectKey(objectURL));
+            return;
         }
 
         throw new PhotoBlogException("Image with id = " + id + " does not exist.");
