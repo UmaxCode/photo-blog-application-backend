@@ -1,7 +1,9 @@
 package org.umaxcode.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
@@ -10,6 +12,7 @@ import java.time.LocalDateTime;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(PhotoBlogException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse PhotoBlogExceptionHandler(PhotoBlogException ex, HttpServletRequest request) {
 
         return ErrorResponse.builder()
