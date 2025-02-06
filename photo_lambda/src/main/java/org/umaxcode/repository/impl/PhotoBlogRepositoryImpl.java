@@ -56,9 +56,12 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
         QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(tableName)
                 .indexName("ownerIndex")
-                .keyConditionExpression("owner = :email")
+                .keyConditionExpression("#owner = :email")
                 .expressionAttributeValues(Map.of(
                         ":email", AttributeValue.builder().s(email).build()
+                ))
+                .expressionAttributeNames(Map.of(
+                        "#owner", "owner"
                 ))
                 .build();
 
@@ -69,9 +72,12 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
         QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(tableName)
                 .indexName("ownerIndex")
-                .keyConditionExpression("owner <> :email")
+                .keyConditionExpression("#owner <> :email")
                 .expressionAttributeValues(Map.of(
                         ":email", AttributeValue.builder().s(email).build()
+                ))
+                .expressionAttributeNames(Map.of(
+                        "#owner", "owner"
                 ))
                 .build();
 
