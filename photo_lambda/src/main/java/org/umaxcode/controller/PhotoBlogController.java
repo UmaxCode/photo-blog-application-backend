@@ -29,11 +29,11 @@ public class PhotoBlogController {
                 .build();
     }
 
-    @GetMapping("/{id}/generate-pre-signed-url")
+    @GetMapping("/{objectKey}/generate-pre-signed-url")
     @ResponseStatus(HttpStatus.OK)
-    public SuccessResponse generatePreSignedUrl(@PathVariable String id) {
+    public SuccessResponse generatePreSignedUrl(@PathVariable("objectKey") String key) {
 
-        PhotoUploadDTo generatedUrl = photoBlogService.generatePreSignedUrl(id);
+        PhotoUploadDTo generatedUrl = photoBlogService.generatePreSignedUrl(key);
 
         return SuccessResponse.builder()
                 .message("Pre-signed url generated successfully")

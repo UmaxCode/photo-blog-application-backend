@@ -10,7 +10,7 @@ public interface PhotoBlogService {
 
     String upload(MultipartFile pic);
 
-    PhotoUploadDTo generatePreSignedUrl(String id);
+    PhotoUploadDTo generatePreSignedUrl(String objectKey);
 
     List<GetPhotoDto> getImages(String ownership);
 

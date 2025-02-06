@@ -33,20 +33,13 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     }
 
     @Override
-    public PhotoUploadDTo generatePreSignedUrl(String id) {
+    public PhotoUploadDTo generatePreSignedUrl(String objectKey) {
 
-        Map<String, AttributeValue> item = photoBlogRepository.getItem(id);
+        URL url = s3Service.generatePreSignedUrl(objectKey, 3);
 
-        if (!item.isEmpty()) {
-            String objectURL = item.get("picUrl").s();
-            URL url = s3Service.generatePreSignedUrl(extractObjectKey(objectURL), 3);
-
-            return PhotoUploadDTo.builder()
-                    .picUrl(url.toString())
-                    .build();
-        }
-
-        throw new PhotoBlogException("Image with id = " + id + " does not exist.");
+        return PhotoUploadDTo.builder()
+                .picUrl(url.toString())
+                .build();
     }
 
     @Override
