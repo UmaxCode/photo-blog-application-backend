@@ -72,7 +72,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
         QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(tableName)
                 .indexName("ownerIndex")
-                .keyConditionExpression("#owner <> :email")
+                .filterExpression("#owner <> :email")
                 .expressionAttributeValues(Map.of(
                         ":email", AttributeValue.builder().s(email).build()
                 ))
