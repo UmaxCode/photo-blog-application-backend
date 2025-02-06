@@ -12,6 +12,6 @@ public interface PhotoBlogRepository {
 
     Map<String, AttributeValue> deleteItem(String id);
 
-    List<String> getItemsPicUrlKey(String email, OwnershipType ownershipType);
+    List<Map<String, String>> getItemsDetails(String email, OwnershipType ownershipType);
 
 }

@@ -4,7 +4,7 @@ import lombok.Builder;
 
 @Builder
 public record GetPhotoDto(
-        String objectKey,
+        String imgId,
         byte[] image
 ) {
 }

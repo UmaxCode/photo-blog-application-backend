@@ -78,12 +78,12 @@ public class S3ServiceImpl implements S3Service {
     }
 
     @Override
-    public List<GetPhotoDto> getObjects(List<String> objectKeys) {
-        ExecutorService executor = Executors.newFixedThreadPool(objectKeys.size());
+    public List<GetPhotoDto> getObjects(List<Map<String, String>> objectDetails) {
+        ExecutorService executor = Executors.newFixedThreadPool(objectDetails.size());
 
         // Use CompletableFuture for parallel execution
-        List<CompletableFuture<GetPhotoDto>> futures = objectKeys.stream()
-                .map(key -> CompletableFuture.supplyAsync(() -> getObjectBytes(key), executor))
+        List<CompletableFuture<GetPhotoDto>> futures = objectDetails.stream()
+                .map(detail -> CompletableFuture.supplyAsync(() -> getObjectBytes(detail), executor))
                 .toList();
 
         // Wait for all tasks to complete and collect results
@@ -95,17 +95,17 @@ public class S3ServiceImpl implements S3Service {
         return result;
     }
 
-    private GetPhotoDto getObjectBytes(String objectKey) {
+    private GetPhotoDto getObjectBytes(Map<String, String> objectDetail) {
 
         GetObjectRequest request = GetObjectRequest.builder()
                 .bucket(primaryBucketName)
-                .key(objectKey)
+                .key(objectDetail.get("objectKey"))
                 .build();
 
         byte[] byteArray = s3Client.getObject(request, ResponseTransformer.toBytes()).asByteArray();
 
         return GetPhotoDto.builder()
-                .objectKey(objectKey)
+                .imgId(objectDetail.get("picId"))
                 .image(byteArray)
                 .build();
     }

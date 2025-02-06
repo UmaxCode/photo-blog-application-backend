@@ -36,15 +36,20 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
     }
 
     @Override
-    public List<String> getItemsPicUrlKey(String email, OwnershipType ownershipType) {
+    public List<Map<String, String>> getItemsDetails(String email, OwnershipType ownershipType) {
+
         if (OwnershipType.OWN_PHOTO.equals(ownershipType)) {
             return getByOwner(email).stream()
-                    .map(photo -> extractObjectKey(photo.get("picUrl").s()))
+                    .map(photo -> Map.of(
+                            "picId", photo.get("picId").s(),
+                            "objectKey", extractObjectKey(photo.get("picUrl").s())))
                     .toList();
         }
 
         return getByOthers(email).stream()
-                .map(photo -> extractObjectKey(photo.get("picUrl").s()))
+                .map(photo -> Map.of(
+                        "picId", photo.get("picId").s(),
+                        "objectKey", extractObjectKey(photo.get("picUrl").s())))
                 .toList();
     }
 

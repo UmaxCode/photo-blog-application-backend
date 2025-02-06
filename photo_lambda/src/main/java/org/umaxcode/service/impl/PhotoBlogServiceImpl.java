@@ -33,24 +33,31 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     }
 
     @Override
-    public PhotoUploadDTo generatePreSignedUrl(String objectKey) {
+    public PhotoUploadDTo generatePreSignedUrl(String id) {
 
-        URL url = s3Service.generatePreSignedUrl(objectKey, 3);
+        Map<String, AttributeValue> item = photoBlogRepository.getItem(id);
 
-        return PhotoUploadDTo.builder()
-                .picUrl(url.toString())
-                .build();
+        if (!item.isEmpty()) {
+            String objectURL = item.get("picUrl").s();
+            URL url = s3Service.generatePreSignedUrl(extractObjectKey(objectURL), 3);
+
+            return PhotoUploadDTo.builder()
+                    .picUrl(url.toString())
+                    .build();
+        }
+
+        throw new PhotoBlogException("Image with id = " + id + " does not exist.");
     }
 
     @Override
     public List<GetPhotoDto> getImages(String ownership) {
         OwnershipType type = OwnershipType.fromString(ownership);
-        List<String> keys = photoBlogRepository.getItemsPicUrlKey("example@gmail.com", type);
-        if (keys.isEmpty()) {
+        List<Map<String, String>> details = photoBlogRepository.getItemsDetails("example@gmail.com", type);
+        if (details.isEmpty()) {
             return List.of();
         }
 
-        return s3Service.getObjects(keys);
+        return s3Service.getObjects(details);
     }
 
     @Override
