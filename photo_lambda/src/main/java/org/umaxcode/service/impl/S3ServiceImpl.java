@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.umaxcode.domain.dto.response.GetPhotoDto;
 import org.umaxcode.service.S3Service;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -17,7 +19,11 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static software.amazon.awssdk.core.sync.RequestBody.fromBytes;
 
@@ -69,6 +75,39 @@ public class S3ServiceImpl implements S3Service {
                 .build();
 
         return s3Presigner.presignGetObject(preSignRequest).url();
+    }
+
+    @Override
+    public List<GetPhotoDto> getObjects(List<String> objectKeys) {
+        ExecutorService executor = Executors.newFixedThreadPool(objectKeys.size());
+
+        // Use CompletableFuture for parallel execution
+        List<CompletableFuture<GetPhotoDto>> futures = objectKeys.stream()
+                .map(key -> CompletableFuture.supplyAsync(() -> getObjectBytes(key), executor))
+                .toList();
+
+        // Wait for all tasks to complete and collect results
+        List<GetPhotoDto> result = futures.stream()
+                .map(CompletableFuture::join)
+                .toList();
+
+        executor.shutdown();
+        return result;
+    }
+
+    private GetPhotoDto getObjectBytes(String objectKey) {
+
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(primaryBucketName)
+                .key(objectKey)
+                .build();
+
+        byte[] byteArray = s3Client.getObject(request, ResponseTransformer.toBytes()).asByteArray();
+
+        return GetPhotoDto.builder()
+                .objectKey(objectKey)
+                .image(byteArray)
+                .build();
     }
 
     @Override

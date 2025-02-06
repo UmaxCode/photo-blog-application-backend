@@ -3,7 +3,9 @@ package org.umaxcode.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.umaxcode.dto.response.PhotoUploadDTo;
+import org.umaxcode.domain.dto.response.GetPhotoDto;
+import org.umaxcode.domain.dto.response.PhotoUploadDTo;
+import org.umaxcode.domain.enums.OwnershipType;
 import org.umaxcode.exception.PhotoBlogException;
 import org.umaxcode.repository.PhotoBlogRepository;
 import org.umaxcode.service.PhotoBlogService;
@@ -11,6 +13,7 @@ import org.umaxcode.service.S3Service;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.net.URL;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -46,6 +49,16 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
         throw new PhotoBlogException("Image with id = " + id + " does not exist.");
     }
 
+    @Override
+    public List<GetPhotoDto> getImages(String ownership) {
+        OwnershipType type = OwnershipType.fromString(ownership);
+        List<String> keys = photoBlogRepository.getItemsPicUrlKey("example@gmail.com", type);
+        if (keys.isEmpty()) {
+            return List.of();
+        }
+
+        return s3Service.getObjects(keys);
+    }
 
     @Override
     public void deleteImage(String id) {
