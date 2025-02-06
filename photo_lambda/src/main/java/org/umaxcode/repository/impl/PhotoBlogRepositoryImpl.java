@@ -69,9 +69,8 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
     }
 
     private List<Map<String, AttributeValue>> getByOthers(String email) {
-        QueryRequest queryRequest = QueryRequest.builder()
+        ScanRequest scanRequest = ScanRequest.builder()
                 .tableName(tableName)
-                .indexName("ownerIndex")
                 .filterExpression("#owner <> :email")
                 .expressionAttributeValues(Map.of(
                         ":email", AttributeValue.builder().s(email).build()
@@ -81,7 +80,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
                 ))
                 .build();
 
-        return dynamoDbClient.query(queryRequest).items();
+        return dynamoDbClient.scan(scanRequest).items();
     }
 
     @Override
