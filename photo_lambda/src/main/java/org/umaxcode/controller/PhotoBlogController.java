@@ -4,9 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.umaxcode.dto.response.PhotoUploadDTo;
-import org.umaxcode.dto.response.SuccessResponse;
+import org.umaxcode.domain.dto.response.GetPhotoDto;
+import org.umaxcode.domain.dto.response.PhotoUploadDTo;
+import org.umaxcode.domain.dto.response.SuccessResponse;
 import org.umaxcode.service.PhotoBlogService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/photos")
@@ -35,6 +38,17 @@ public class PhotoBlogController {
         return SuccessResponse.builder()
                 .message("Pre-signed url generated successfully")
                 .data(generatedUrl)
+                .build();
+    }
+
+    @GetMapping("/{ownership-type}")
+    @ResponseStatus(HttpStatus.OK)
+    public SuccessResponse getAllPhotos(@PathVariable("ownership-type") String ownership) {
+
+        List<GetPhotoDto> images = photoBlogService.getImages(ownership);
+        return SuccessResponse.builder()
+                .message("All photos retrieved successfully")
+                .data(images)
                 .build();
     }
 
