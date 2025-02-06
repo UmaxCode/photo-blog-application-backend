@@ -1,4 +1,4 @@
-package org.umaxcode.dto.response;
+package org.umaxcode.domain.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
