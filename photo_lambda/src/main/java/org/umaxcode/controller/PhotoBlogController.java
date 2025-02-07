@@ -52,6 +52,28 @@ public class PhotoBlogController {
                 .build();
     }
 
+    @PatchMapping("/{id}/recycle-bin")
+    @ResponseStatus(HttpStatus.OK)
+    public SuccessResponse movePhotoToRecycleBin(@PathVariable String id) {
+
+        GetPhotoDto updateResponse = photoBlogService.moveToRecycleBin(id);
+        return SuccessResponse.builder()
+                .message("Photo moved to recycling bin successfully")
+                .data(updateResponse)
+                .build();
+    }
+
+    @PatchMapping("/{id}/recycle-bin/restore")
+    @ResponseStatus(HttpStatus.OK)
+    public SuccessResponse restorePhotoFromRecycleBin(@PathVariable String id) {
+
+        GetPhotoDto updateResponse = photoBlogService.restoreFromRecycleBin(id);
+        return SuccessResponse.builder()
+                .message("Photo has been restored successfully")
+                .data(updateResponse)
+                .build();
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePhoto(@PathVariable String id) {
