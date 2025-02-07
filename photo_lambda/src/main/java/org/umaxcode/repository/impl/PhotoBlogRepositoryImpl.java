@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import org.umaxcode.domain.enums.OwnershipType;
+import org.umaxcode.exception.PhotoBlogException;
 import org.umaxcode.repository.PhotoBlogRepository;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
@@ -103,5 +104,60 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
         DeleteItemResponse deleteResponse = dynamoDbClient.deleteItem(deleteRequest);
 
         return deleteResponse.attributes();
+    }
+
+    @Override
+    public Map<String, AttributeValue> addItemToRecycleBin(String id) {
+
+        try {
+            Map<String, AttributeValue> key = Map.of(
+                    "picId", AttributeValue.builder().s(id).build()
+            );
+
+            UpdateItemRequest updateItemRequest = UpdateItemRequest.builder()
+                    .tableName(tableName)
+                    .key(key)
+                    .updateExpression("SET isPlacedInRecycleBin = :true")
+                    .conditionExpression("isPlacedInRecycleBin = :false")
+                    .expressionAttributeValues(Map.of(
+                            ":true", AttributeValue.builder().n("1").build(),
+                            ":false", AttributeValue.builder().n("0").build()
+                    ))
+                    .returnValues("ALL_NEW")
+                    .build();
+
+
+            UpdateItemResponse updateItemResponse = dynamoDbClient.updateItem(updateItemRequest);
+            return updateItemResponse.attributes();
+        } catch (ConditionalCheckFailedException ex) {
+            throw new PhotoBlogException("Photo is already added to recycle bin");
+        }
+
+    }
+
+    @Override
+    public Map<String, AttributeValue> restoreFromRecycleBin(String id) {
+        try {
+            Map<String, AttributeValue> key = Map.of(
+                    "picId", AttributeValue.builder().s(id).build()
+            );
+
+            UpdateItemRequest updateItemRequest = UpdateItemRequest.builder()
+                    .tableName(tableName)
+                    .key(key)
+                    .updateExpression("SET isPlacedInRecycleBin = :false")
+                    .conditionExpression("isPlacedInRecycleBin = :true")
+                    .expressionAttributeValues(Map.of(
+                            ":false", AttributeValue.builder().n("0").build(),
+                            ":true", AttributeValue.builder().n("1").build()
+                    ))
+                    .returnValues("ALL_NEW")
+                    .build();
+
+            UpdateItemResponse updateItemResponse = dynamoDbClient.updateItem(updateItemRequest);
+            return updateItemResponse.attributes();
+        } catch (ConditionalCheckFailedException ex) {
+            throw new PhotoBlogException("Photo has already been restored");
+        }
     }
 }
