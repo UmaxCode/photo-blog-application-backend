@@ -16,4 +16,6 @@ public interface S3Service {
     List<GetPhotoDto> getObjects(List<Map<String, String>> objectKeys);
 
     void deleteObject(String objectKey);
+
+    void moveObject(String sourceObjectKey, String destinationObjectKey);
 }

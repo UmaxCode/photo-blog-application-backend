@@ -8,10 +8,7 @@ import org.umaxcode.domain.dto.response.GetPhotoDto;
 import org.umaxcode.service.S3Service;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
@@ -119,5 +116,24 @@ public class S3ServiceImpl implements S3Service {
                 .build();
 
         s3Client.deleteObject(deleteRequest);
+    }
+
+    @Override
+    public void moveObject(String sourceObjectKey, String destinationObjectKey) {
+        // Copy to recycled path
+        CopyObjectRequest copyReq = CopyObjectRequest.builder()
+                .sourceBucket(primaryBucketName)
+                .sourceKey(sourceObjectKey)
+                .destinationBucket(primaryBucketName)
+                .destinationKey(destinationObjectKey)
+                .build();
+        s3Client.copyObject(copyReq);
+
+        // Delete original
+        DeleteObjectRequest deleteReq = DeleteObjectRequest.builder()
+                .bucket(primaryBucketName)
+                .key(sourceObjectKey)
+                .build();
+        s3Client.deleteObject(deleteReq);
     }
 }
