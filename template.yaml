@@ -50,6 +50,7 @@ Resources:
             Action:
               - s3:GetObject
               - s3:DeleteObject
+              - s3:PutObject
             Resource: !Sub ${PrimaryBucket.Arn}/*
       CodeUri: photo_lambda
       Environment:
@@ -144,6 +145,8 @@ Resources:
           AttributeType: S
         - AttributeName: picUrl
           AttributeType: S
+        - AttributeName: isPlacedInRecycleBin
+          AttributeType: N
       KeySchema:
         - AttributeName: picId
           KeyType: HASH
@@ -157,6 +160,12 @@ Resources:
         - IndexName: picUrlIndex
           KeySchema:
             - AttributeName: picUrl
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: isPlacedInRecycleBinIndex
+          KeySchema:
+            - AttributeName: isPlacedInRecycleBin
               KeyType: HASH
           Projection:
             ProjectionType: ALL
