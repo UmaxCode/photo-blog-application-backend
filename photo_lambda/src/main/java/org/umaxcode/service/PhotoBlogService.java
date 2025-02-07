@@ -15,4 +15,8 @@ public interface PhotoBlogService {
     List<GetPhotoDto> getImages(String ownership);
 
     void deleteImage(String id);
+
+    GetPhotoDto moveToRecycleBin(String id);
+
+    GetPhotoDto restoreFromRecycleBin(String id);
 }

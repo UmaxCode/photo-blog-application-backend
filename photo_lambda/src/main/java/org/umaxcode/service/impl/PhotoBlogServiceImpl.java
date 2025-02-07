@@ -22,6 +22,8 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
 
     private final PhotoBlogRepository photoBlogRepository;
     private final S3Service s3Service;
+    private final String RECYCLE_BIN_PATH = "recycled/";
+
 
     @Override
     public String upload(MultipartFile pic) {
@@ -71,6 +73,26 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
         }
 
         throw new PhotoBlogException("Image with id = " + id + " does not exist.");
+    }
+
+    @Override
+    public GetPhotoDto moveToRecycleBin(String id) {
+        Map<String, AttributeValue> returnedAttribute = photoBlogRepository.addItemToRecycleBin(id);
+        String objectKey = extractObjectKey(returnedAttribute.get("picUrl").s());
+        s3Service.moveObject(objectKey, RECYCLE_BIN_PATH + objectKey);
+        return GetPhotoDto.builder()
+                .imgId(returnedAttribute.get("picId").s())
+                .build();
+    }
+
+    @Override
+    public GetPhotoDto restoreFromRecycleBin(String id) {
+        Map<String, AttributeValue> returnedAttribute = photoBlogRepository.restoreFromRecycleBin(id);
+        String objectKey = extractObjectKey(returnedAttribute.get("picUrl").s());
+        s3Service.moveObject(RECYCLE_BIN_PATH + objectKey, objectKey);
+        return GetPhotoDto.builder()
+                .imgId(returnedAttribute.get("picId").s())
+                .build();
     }
 
     private String extractObjectKey(String s3Url) {
