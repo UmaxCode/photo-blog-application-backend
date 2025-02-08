@@ -217,6 +217,7 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         item.put("picId", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
         item.put("picUrl", AttributeValue.builder().s(photoUrl).build());
         item.put("owner", AttributeValue.builder().s(owner).build());
+        item.put("isPlacedInRecycleBin", AttributeValue.builder().n("0").build());
         item.put("dateOfUpload", AttributeValue.builder().s(LocalDateTime.now().toString()).build());
 
         PutItemRequest putRequest = PutItemRequest.builder()
