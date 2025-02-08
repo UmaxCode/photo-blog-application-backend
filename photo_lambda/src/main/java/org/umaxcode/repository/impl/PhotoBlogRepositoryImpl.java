@@ -77,7 +77,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
     private List<Map<String, AttributeValue>> getByOthers(String email) {
         ScanRequest scanRequest = ScanRequest.builder()
                 .tableName(tableName)
-                .filterExpression("#owner <> :email")
+                .filterExpression("#owner <> :email, isPlacedInRecycleBin = 0")
                 .expressionAttributeValues(Map.of(
                         ":email", AttributeValue.builder().s(email).build()
                 ))
