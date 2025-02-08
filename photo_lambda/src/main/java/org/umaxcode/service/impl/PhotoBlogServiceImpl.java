@@ -41,7 +41,7 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
 
         if (!item.isEmpty()) {
 
-            if (item.get("isPlacedInRecycleBin").s().equals("0")) {
+            if (item.get("isPlacedInRecycleBin").s().equals("1")) {
                 throw new PhotoBlogException("This image cannot be shared");
             }
 
