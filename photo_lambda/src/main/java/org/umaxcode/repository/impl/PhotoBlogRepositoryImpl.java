@@ -92,18 +92,23 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
     @Override
     public Map<String, AttributeValue> deleteItem(String id) {
 
-        Map<String, AttributeValue> key = new HashMap<>();
-        key.put("picId", AttributeValue.builder().s(id).build());
+        try {
+            Map<String, AttributeValue> key = new HashMap<>();
+            key.put("picId", AttributeValue.builder().s(id).build());
 
-        DeleteItemRequest deleteRequest = DeleteItemRequest.builder()
-                .tableName(tableName)
-                .key(key)
-                .returnValues("ALL_OLD")
-                .build();
+            DeleteItemRequest deleteRequest = DeleteItemRequest.builder()
+                    .tableName(tableName)
+                    .key(key)
+                    .conditionExpression("isPlacedInRecycleBin = 1")
+                    .returnValues("ALL_OLD")
+                    .build();
 
-        DeleteItemResponse deleteResponse = dynamoDbClient.deleteItem(deleteRequest);
+            DeleteItemResponse deleteResponse = dynamoDbClient.deleteItem(deleteRequest);
 
-        return deleteResponse.attributes();
+            return deleteResponse.attributes();
+        }catch (ConditionalCheckFailedException ex){
+            throw new PhotoBlogException("Photo in recycling bin can only be permanently deleted");
+        }
     }
 
     @Override

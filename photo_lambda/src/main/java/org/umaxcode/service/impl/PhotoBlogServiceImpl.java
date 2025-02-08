@@ -68,7 +68,7 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
         Map<String, AttributeValue> deleteResponse = photoBlogRepository.deleteItem(id);
         if (!deleteResponse.isEmpty()) {
             String objectURL = deleteResponse.get("picUrl").s();
-            s3Service.deleteObject(extractObjectKey(objectURL));
+            s3Service.deleteObject(RECYCLE_BIN_PATH + extractObjectKey(objectURL));
             return;
         }
 
