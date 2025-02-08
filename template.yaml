@@ -58,6 +58,7 @@ Resources:
           AWS_DYNAMODB_TABLE_NAME: !Ref PicturesGlobalTable
           AWS_S3_STAGE_BUCKET_NAME: !Ref StagingBucket
           AWS_S3_PRIMARY_BUCKET_NAME: !Ref PrimaryBucket
+          AWS_COGNITO_USER_POOL_ID: !Ref UserPool
       Events:
         ProxyResource:
           Type: Api
