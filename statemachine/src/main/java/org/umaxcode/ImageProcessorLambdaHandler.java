@@ -28,10 +28,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 
 public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, Object>, Void> {
@@ -87,6 +84,7 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         } catch (Exception ex) {
 
             Map<String, String> errorDetails = new HashMap<>();
+            errorDetails.put("reason", ex.getMessage());
             errorDetails.put("email", email);
             errorDetails.put("objectKey", objectKey);
             try {
@@ -182,16 +180,35 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
 
     private void uploadImageToPrimaryBucket(byte[] imageContent, String objectKey, Context context) {
 
+        String extension = getImageExtension(objectKey);
+        String contentType = String.format("image/%s", extension);
+
         // Upload the image back to S3
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(primaryBucketName)
                 .key(objectKey)
-                .contentType("image/png")
+                .contentType(contentType)
                 .build();
 
         s3Client.putObject(putObjectRequest, RequestBody.fromBytes(imageContent));
 
         context.getLogger().log("Watermarked image uploaded to: " + primaryBucketName + "/" + objectKey);
+    }
+
+    private String getImageExtension(String objectKey) {
+
+        Set<String> VALID_IMAGE_EXTENSIONS = Set.of("jpeg", "jpg", "png", "gif", "bmp", "webp", "tiff", "svg");
+        if (objectKey == null) {
+            throw new ImageProcessingException("No object key");
+        }
+
+        String extension = objectKey.substring(objectKey.lastIndexOf('.') + 1).toLowerCase();
+
+        if (VALID_IMAGE_EXTENSIONS.contains(extension)) {
+            return extension; // Valid image extension
+        }
+
+        throw new ImageProcessingException("Unsupported image extension: " + extension);
     }
 
     private void storePhotoUrl(String photoUrl, String owner, Context context) {
@@ -200,6 +217,7 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         item.put("picId", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
         item.put("picUrl", AttributeValue.builder().s(photoUrl).build());
         item.put("owner", AttributeValue.builder().s(owner).build());
+        item.put("isPlacedInRecycleBin", AttributeValue.builder().n("0").build());
         item.put("dateOfUpload", AttributeValue.builder().s(LocalDateTime.now().toString()).build());
 
         PutItemRequest putRequest = PutItemRequest.builder()
@@ -221,6 +239,10 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
                 .build();
 
         Map<String, AttributeValue> connectionDetails = dynamoDbClient.getItem(request).item();
+
+        if (connectionDetails == null || connectionDetails.isEmpty()) { // don't notify frontend when websocket connection is not established
+            return;
+        }
 
         String connectionId = connectionDetails.get("connectionId").s();
 

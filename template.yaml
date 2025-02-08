@@ -39,17 +39,25 @@ Resources:
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
-            TableName: !Ref DynamoTableName
+            TableName: !Ref PicturesGlobalTable
         - Statement:
             Effect: Allow
             Action:
               - s3:PutObject
             Resource: !Sub ${StagingBucket.Arn}/*
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:DeleteObject
+              - s3:PutObject
+            Resource: !Sub ${PrimaryBucket.Arn}/*
       CodeUri: photo_lambda
       Environment:
         Variables:
-          AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
-          AWS_S3_STAGE_BUCKET_NAME: !Sub ${AWS::StackName}-staging-bucket
+          AWS_DYNAMODB_TABLE_NAME: !Ref PicturesGlobalTable
+          AWS_S3_STAGE_BUCKET_NAME: !Ref StagingBucket
+          AWS_S3_PRIMARY_BUCKET_NAME: !Ref PrimaryBucket
       Events:
         ProxyResource:
           Type: Api
@@ -137,6 +145,8 @@ Resources:
           AttributeType: S
         - AttributeName: picUrl
           AttributeType: S
+        - AttributeName: isPlacedInRecycleBin
+          AttributeType: N
       KeySchema:
         - AttributeName: picId
           KeyType: HASH
@@ -150,6 +160,12 @@ Resources:
         - IndexName: picUrlIndex
           KeySchema:
             - AttributeName: picUrl
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: isPlacedInRecycleBinIndex
+          KeySchema:
+            - AttributeName: isPlacedInRecycleBin
               KeyType: HASH
           Projection:
             ProjectionType: ALL
@@ -233,8 +249,8 @@ Resources:
       CodeUri: statemachine
       Environment:
         Variables:
-          AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
-          AWS_S3_PRIMARY_BUCKET_NAME: !Sub ${AWS::StackName}-primary-bucket
+          AWS_DYNAMODB_TABLE_NAME: !Ref PicturesGlobalTable
+          AWS_S3_PRIMARY_BUCKET_NAME: !Ref PrimaryBucket
           WEBSOCKET_CON_TABLE_NAME: !Ref WebSocketConnectionsTable
           API_GATEWAY_WEBSOCKET_ENDPOINT: !Join
             - ""
