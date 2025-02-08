@@ -63,6 +63,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
                 .tableName(tableName)
                 .indexName("ownerIndex")
                 .keyConditionExpression("#owner = :email")
+                .filterExpression("isPlacedInRecycleBin = 0")
                 .expressionAttributeValues(Map.of(
                         ":email", AttributeValue.builder().s(email).build()
                 ))
@@ -106,7 +107,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
             DeleteItemResponse deleteResponse = dynamoDbClient.deleteItem(deleteRequest);
 
             return deleteResponse.attributes();
-        }catch (ConditionalCheckFailedException ex){
+        } catch (ConditionalCheckFailedException ex) {
             throw new PhotoBlogException("Photo in recycling bin can only be permanently deleted");
         }
     }
