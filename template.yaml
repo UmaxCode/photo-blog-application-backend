@@ -70,8 +70,6 @@ Resources:
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: !Sub ${AWS::StackName}-user-pool
-      AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: true
       AutoVerifiedAttributes:
         - email
       UsernameAttributes:
@@ -96,7 +94,6 @@ Resources:
           RequireLowercase: true
           RequireNumbers: true
           RequireSymbols: true
-          TemporaryPasswordValidityDays: 7
 
   UserPoolClient: # Cognito User Pool Client
     Type: AWS::Cognito::UserPoolClient
