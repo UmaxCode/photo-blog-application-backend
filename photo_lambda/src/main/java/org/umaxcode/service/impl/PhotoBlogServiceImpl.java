@@ -1,6 +1,7 @@
 package org.umaxcode.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.umaxcode.domain.dto.response.GetPhotoDto;
@@ -26,12 +27,15 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
 
 
     @Override
-    public String upload(MultipartFile pic) {
+    public String upload(MultipartFile pic, Jwt jwt) {
 
+        String firstName = jwt.getClaimAsString("given_name");
+        String lastName = jwt.getClaimAsString("family_name");
+        String email = jwt.getClaimAsString("email");
         return s3Service.upload(pic,
-                "example@gmail.com",
-                "firstName",
-                "lastName");
+                email,
+                firstName,
+                lastName);
     }
 
     @Override
