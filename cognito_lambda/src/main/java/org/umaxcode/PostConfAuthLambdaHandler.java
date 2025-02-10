@@ -6,8 +6,7 @@ import com.amazonaws.services.lambda.runtime.events.CognitoUserPoolPostAuthentic
 import com.amazonaws.services.lambda.runtime.events.CognitoUserPoolPostConfirmationEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.services.sns.SnsClient;
-import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
-import software.amazon.awssdk.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.model.*;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -51,6 +50,39 @@ public class PostConfAuthLambdaHandler implements RequestHandler<Map<String, Obj
     private void handlePostConfirmation(CognitoUserPoolPostConfirmationEvent event, Context context) {
         String email = event.getRequest().getUserAttributes().get("email");
 
+        SubscribeRequest subscribeRequest = SubscribeRequest.builder()
+                .protocol("email")
+                .endpoint(email)
+                .returnSubscriptionArn(true)
+                .topicArn(topicArn)
+                .build();
+
+        try {
+            SubscribeResponse response = snsClient.subscribe(subscribeRequest);
+            context.getLogger().log("Subscription result: " + response);
+
+            // Define a filter policy
+            String filterPolicy = String.format("{ \"endpointEmail\": [\"%s\"] }", email);
+
+            // Set the filter policy for the subscription
+            String subscriptionArn = response.subscriptionArn();
+
+            System.out.println("SubscriptionArn" + subscriptionArn);
+            SetSubscriptionAttributesRequest filterPolicyRequest = SetSubscriptionAttributesRequest.builder()
+                    .subscriptionArn(subscriptionArn)
+                    .attributeName("FilterPolicy")
+                    .attributeValue(filterPolicy)
+                    .build();
+
+            snsClient.setSubscriptionAttributes(filterPolicyRequest);
+
+            context.getLogger().log("Filter policy set for subscription: " + subscriptionArn);
+            context.getLogger().log("Successfully subscribed " + email + " to the SNS topic with filter policy: " + topicArn);
+
+        } catch (Exception e) {
+            context.getLogger().log("Error subscribing user: " + e.getMessage());
+        }
+
     }
 
     private void handlePostAuthentication(CognitoUserPoolPostAuthenticationEvent event, Context context) {
@@ -86,7 +118,11 @@ public class PostConfAuthLambdaHandler implements RequestHandler<Map<String, Obj
                 .messageAttributes(messageAttributes)
                 .build();
 
-        snsClient.publish(publishRequest);
+        try {
+            snsClient.publish(publishRequest);
+        } catch (Exception ex) {
+            context.getLogger().log("Error publishing sns to user: " + ex.getMessage());
+        }
 
         String userId = event.getUserName();
         context.getLogger().log("User {} successfully authenticated: " + userId);
