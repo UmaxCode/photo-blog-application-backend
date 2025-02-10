@@ -63,7 +63,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
                 .tableName(tableName)
                 .indexName("ownerIndex")
                 .keyConditionExpression("#owner = :email")
-                .filterExpression("isPlacedInRecycleBin = :false")
+//                .filterExpression("isPlacedInRecycleBin = :false")
                 .expressionAttributeValues(Map.of(
                         ":email", AttributeValue.builder().s(email).build(),
                         ":false", AttributeValue.builder().n("0").build()
@@ -79,7 +79,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
     private List<Map<String, AttributeValue>> getByOthers(String email) {
         ScanRequest scanRequest = ScanRequest.builder()
                 .tableName(tableName)
-                .filterExpression("#owner <> :email, isPlacedInRecycleBin = :false")
+                .filterExpression("#owner <> :email AND isPlacedInRecycleBin = :false")
                 .expressionAttributeValues(Map.of(
                         ":email", AttributeValue.builder().s(email).build(),
                         ":false", AttributeValue.builder().n("0").build()
