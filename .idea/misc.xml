@@ -8,6 +8,7 @@
         <option value="$PROJECT_DIR$/statemachine/pom.xml" />
         <option value="$PROJECT_DIR$/photo_lambda/pom.xml" />
         <option value="$PROJECT_DIR$/congnito_lambda/pom.xml" />
+        <option value="$PROJECT_DIR$/cognito_lambda/pom.xml" />
       </list>
     </option>
   </component>

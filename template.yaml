@@ -138,18 +138,23 @@ Resources:
       Handler: org.umaxcode.PostConfAuthLambdaHandler::handleRequest
       Policies:
         - AWSLambdaBasicExecutionRole
+        - Statement:
+              - Effect: Allow
+                Action:
+                  - sns:publish
+                Resource: !Ref SNSNotificationTopic
       CodeUri: cognito_lambda
       Environment:
         Variables:
-          IMG_PROCESSING_FAILURE_TOPIC: !Ref ImageProcessingFailureTopic
+          SNS_NOTIFICATION_TOPIC_ARN: !Ref SNSNotificationTopic
       Events:
         CognitoEvents:
           Type: Cognito
           Properties:
             UserPool: !Ref UserPool
             Trigger:
-                - PostConfirmation
-                - PostAuthentication
+              - PostConfirmation
+              - PostAuthentication
 
   PicturesGlobalTable: # DynamoDB Global Table for image info
     Type: AWS::DynamoDB::Table
@@ -179,13 +184,13 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-#      Replicas:
-#        - Region: !Ref PrimaryRegion
-#        - Region: !Ref DRRegion
-#      SSESpecification:
-#        SSEEnabled: true
-#      StreamSpecification:
-#        StreamViewType: NEW_IMAGE
+  #      Replicas:
+  #        - Region: !Ref PrimaryRegion
+  #        - Region: !Ref DRRegion
+  #      SSESpecification:
+  #        SSEEnabled: true
+  #      StreamSpecification:
+  #        StreamViewType: NEW_IMAGE
 
   StagingBucket: # Staging S3 Bucket (for uploading images before processing)
     Type: AWS::S3::Bucket
@@ -271,11 +276,11 @@ Resources:
               - ".amazonaws.com/"
               - !Ref WebSocketStage
 
-  ImageProcessingFailureTopic: # SNS for receiving image processing failed notification
+  SNSNotificationTopic: # SNS for receiving notifications
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub ${AWS::StackName}-ImgProFailTopic
-      DisplayName: Image Processing Failure Notifications Topic
+      TopicName: !Sub ${AWS::StackName}-SnsNotificationTopic
+      DisplayName: SNS notification topic for receiving notifications
 
   ImageProcessingFailureNotificationFunction: # Lambda function for sending notification for fail image processing
     Type: AWS::Serverless::Function
@@ -288,11 +293,11 @@ Resources:
             - Effect: Allow
               Action:
                 - sns:publish
-              Resource: !Ref ImageProcessingFailureTopic
+              Resource: !Ref SNSNotificationTopic
       CodeUri: statemachine
       Environment:
         Variables:
-          IMG_PRO_NOTIFICATION_TOPIC_ARN: !Ref ImageProcessingFailureTopic
+          SNS_NOTIFICATION_TOPIC_ARN: !Ref SNSNotificationTopic
 
   PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
     Type: AWS::S3::Bucket
@@ -306,7 +311,7 @@ Resources:
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: "$request.body.action"
 
-  ConnectRoute:  # connect route for the websocket
+  ConnectRoute: # connect route for the websocket
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref WebSocketApi
