@@ -143,6 +143,11 @@ Resources:
                 Action:
                   - sns:publish
                 Resource: !Ref SNSNotificationTopic
+        - Statement:
+            Effect: Allow
+            Action:
+              - sns:Subscribe
+              - sns:SetSubscriptionAttributes
       CodeUri: cognito_lambda
       Environment:
         Variables:
