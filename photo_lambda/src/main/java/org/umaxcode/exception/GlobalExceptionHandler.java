@@ -21,4 +21,15 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse exceptionHandler(Exception ex, HttpServletRequest request) {
+
+        return ErrorResponse.builder()
+                .path(request.getRequestURI())
+                .message(ex.getMessage())
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+    }
 }
