@@ -65,8 +65,8 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
                 .keyConditionExpression("#owner = :email")
 //                .filterExpression("isPlacedInRecycleBin = :false")
                 .expressionAttributeValues(Map.of(
-                        ":email", AttributeValue.builder().s(email).build(),
-                        ":false", AttributeValue.builder().n("0").build()
+                        ":email", AttributeValue.builder().s(email).build()
+//                        ":false", AttributeValue.builder().n("0").build()
                 ))
                 .expressionAttributeNames(Map.of(
                         "#owner", "owner"
