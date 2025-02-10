@@ -42,7 +42,7 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     public PhotoUploadDTo generatePreSignedUrl(String id) {
 
         Map<String, AttributeValue> item = photoBlogRepository.getItem(id);
-
+        System.out.println("Results: " + item.size() + "values " + item);
         if (!item.isEmpty()) {
 
             if (item.get("isPlacedInRecycleBin").s().equals("1")) {
