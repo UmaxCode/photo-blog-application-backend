@@ -1,8 +1,10 @@
 package org.umaxcode.config;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -12,6 +14,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+@Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
@@ -23,7 +27,7 @@ public class SecurityConfig {
                         .requestMatchers("/ping", "/pong").permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(Customizer.withDefaults())
+                .oauth2ResourceServer(jwt -> jwt.jwt(Customizer.withDefaults()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
