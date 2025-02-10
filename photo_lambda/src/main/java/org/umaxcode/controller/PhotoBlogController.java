@@ -45,9 +45,9 @@ public class PhotoBlogController {
 
     @GetMapping("/{ownership-type}")
     @ResponseStatus(HttpStatus.OK)
-    public SuccessResponse getAllPhotos(@PathVariable("ownership-type") String ownership) {
+    public SuccessResponse getAllPhotos(@PathVariable("ownership-type") String ownership, @AuthenticationPrincipal Jwt jwt) {
 
-        List<GetPhotoDto> images = photoBlogService.getImages(ownership);
+        List<GetPhotoDto> images = photoBlogService.getImages(ownership, jwt);
         return SuccessResponse.builder()
                 .message("All photos retrieved successfully")
                 .data(images)

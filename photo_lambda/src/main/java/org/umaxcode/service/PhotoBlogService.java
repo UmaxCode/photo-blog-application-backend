@@ -13,7 +13,7 @@ public interface PhotoBlogService {
 
     PhotoUploadDTo generatePreSignedUrl(String id);
 
-    List<GetPhotoDto> getImages(String ownership);
+    List<GetPhotoDto> getImages(String ownership, Jwt jwt);
 
     void deleteImage(String id);
 

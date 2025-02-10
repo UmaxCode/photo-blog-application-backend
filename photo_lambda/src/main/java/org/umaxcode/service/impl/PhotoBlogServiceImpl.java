@@ -61,9 +61,10 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     }
 
     @Override
-    public List<GetPhotoDto> getImages(String ownership) {
+    public List<GetPhotoDto> getImages(String ownership, Jwt jwt) {
         OwnershipType type = OwnershipType.fromString(ownership);
-        List<Map<String, String>> details = photoBlogRepository.getItemsDetails("example@gmail.com", type);
+        String email = jwt.getClaimAsString("email");
+        List<Map<String, String>> details = photoBlogRepository.getItemsDetails(email, type);
         if (details.isEmpty()) {
             return List.of();
         }
