@@ -131,6 +131,18 @@ Resources:
       Domain: !Sub ${AWS::StackName}-user-pool-domain
       UserPoolId: !Ref UserPool
 
+  PostConfAuthLambdaHandler: # Lambda function for handling post confirmation and authentication
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-postConfAuthLambda
+      Handler: org.umaxcode.PostConfAuthLambdaHandler::handleRequest
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      CodeUri: cognito_lambda
+      Environment:
+        Variables:
+          IMG_PROCESSING_FAILURE_TOPIC: !Ref ImageProcessingFailureTopic
+
   PicturesGlobalTable: # DynamoDB Global Table for image info
     Type: AWS::DynamoDB::Table
     Properties:
