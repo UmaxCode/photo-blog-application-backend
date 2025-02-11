@@ -46,7 +46,7 @@ public class PostConfAuthLambdaHandler implements RequestHandler<Map<String, Obj
                 break;
         }
 
-        return null;
+        return event;
     }
 
     private void handlePostConfirmation(CognitoUserPoolPostConfirmationEvent event, Context context) {
