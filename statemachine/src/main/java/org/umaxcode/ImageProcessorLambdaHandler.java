@@ -17,6 +17,7 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -80,7 +81,7 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
 
             notifyClientOfSuccessfulImageProcessing(email);
 
-            //:TODO delete unprocess image from staging bucket
+            deleteImageFromStagingBucket(bucketName, objectKey);
 
         } catch (Exception ex) {
 
@@ -276,5 +277,15 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
             }
         }
 
+    }
+
+    private void deleteImageFromStagingBucket(String bucketName, String objectKey) {
+
+        DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                .bucket(bucketName)
+                .key(objectKey)
+                .build();
+
+        s3Client.deleteObject(deleteRequest);
     }
 }
