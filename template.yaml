@@ -252,8 +252,12 @@ Resources:
             Effect: Allow
             Action:
               - dynamodb:PutItem
-              - dynamodb:Query
             Resource: !GetAtt PicturesGlobalTable.Arn
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:Query
+            Resource: !GetAtt WebSocketConnectionsTable.Arn
         - Statement:
             - Effect: Allow
               Action:
