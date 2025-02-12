@@ -13,8 +13,9 @@ import software.amazon.awssdk.services.apigatewaymanagementapi.model.GoneExcepti
 import software.amazon.awssdk.services.apigatewaymanagementapi.model.PostToConnectionRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
@@ -77,7 +78,7 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
 
             context.getLogger().log("Processed image URL: " + processedImageUrl);
 
-            sendProcessedPhotoUrlToClient(email, processedImageUrl);
+            notifyClientOfSuccessfulImageProcessing(email);
 
             //:TODO delete unprocess image from staging bucket
 
@@ -143,7 +144,7 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         // Set watermark properties
         Font font = new Font("Arial", Font.BOLD, 25); // Smaller font size
         g2d.setFont(font);
-        g2d.setColor(new Color(255, 0, 0, 100)); // Red with transparency
+        g2d.setColor(new Color(255, 0, 0, 216)); // Red with transparency
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
 
         // Get the current date
@@ -159,12 +160,12 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         int textWidthLine2 = fontMetrics.stringWidth(line2);
         int textHeight = fontMetrics.getHeight();
 
-        // Calculate positions for bottom-right placement
-        int margin = 30; // Margin from the bottom and right edges
-        int xLine1 = originalImage.getWidth() - textWidthLine1 - margin; // Bottom-right for line 1
-        int xLine2 = originalImage.getWidth() - textWidthLine2 - margin; // Bottom-right for line 2
-        int yLine1 = originalImage.getHeight() - textHeight * 2 - margin; // First line position
-        int yLine2 = originalImage.getHeight() - textHeight - margin; // Second line position
+        // Calculate centered positions
+        int xLine1 = (originalImage.getWidth() - textWidthLine1) / 2; // Center horizontally
+        int xLine2 = (originalImage.getWidth() - textWidthLine2) / 2; // Center horizontally
+        int yCenter = originalImage.getHeight() / 2; // Center vertically
+        int yLine1 = yCenter - textHeight / 2; // Adjust first line
+        int yLine2 = yCenter + textHeight; // Adjust second line below
 
         // Draw the text
         g2d.drawString(line1, xLine1, yLine1);
@@ -229,43 +230,50 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         context.getLogger().log("Photo stored in dynamoDB");
     }
 
-    private void sendProcessedPhotoUrlToClient(String email, String imageUrl) throws JsonProcessingException {
+    private void notifyClientOfSuccessfulImageProcessing(String email) throws JsonProcessingException {
 
-        Map<String, AttributeValue> key = new HashMap<>();
-        key.put("email", AttributeValue.builder().s(email).build());
-        GetItemRequest request = GetItemRequest.builder()
+        QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(connectTableName)
-                .key(key)
+                .indexName("emailIndex")
+                .keyConditionExpression("#email = :email")
+                .expressionAttributeValues(Map.of(
+                        ":email", AttributeValue.builder().s(email).build()
+                ))
+                .expressionAttributeNames(Map.of(
+                        "#email", "email"
+                ))
                 .build();
 
-        Map<String, AttributeValue> connectionDetails = dynamoDbClient.getItem(request).item();
+        QueryResponse queryResult = dynamoDbClient.query(queryRequest);
 
-        if (connectionDetails == null || connectionDetails.isEmpty()) { // don't notify frontend when websocket connection is not established
+        if (queryResult == null || !queryResult.hasItems()) { // don't notify frontend when websocket connection is not established
             return;
         }
 
-        String connectionId = connectionDetails.get("connectionId").s();
+        for (Map<String, AttributeValue> connection : queryResult.items()) {
 
-        ApiGatewayManagementApiClient client = ApiGatewayManagementApiClient.builder()
-                .endpointOverride(URI.create(websocketMessageEndpoint))
-                .build();
+            String connectionId = connection.get("connectionId").s();
 
-        Map<String, String> response = new HashMap<>();
-        response.put("imgUrl", imageUrl);
-        response.put("message", "Image processed successfully");
+            ApiGatewayManagementApiClient client = ApiGatewayManagementApiClient.builder()
+                    .endpointOverride(URI.create(websocketMessageEndpoint))
+                    .build();
 
-        PostToConnectionRequest postRequest = PostToConnectionRequest.builder()
-                .connectionId(connectionId)
-                .data(SdkBytes.fromUtf8String(objectMapper.writeValueAsString(response)))
-                .build();
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Image processed successfully");
 
-        try {
-            client.postToConnection(postRequest);
-            System.out.println("Message sent successfully!");
-        } catch (GoneException e) {
-            System.err.println("Connection is stale: ");
-        } catch (Exception e) {
-            System.err.println("General error: " + e.getMessage());
+            PostToConnectionRequest postRequest = PostToConnectionRequest.builder()
+                    .connectionId(connectionId)
+                    .data(SdkBytes.fromUtf8String(objectMapper.writeValueAsString(response)))
+                    .build();
+
+            try {
+                client.postToConnection(postRequest);
+                System.out.println("Message sent successfully!");
+            } catch (GoneException e) {
+                System.err.println("Connection is stale: ");
+            } catch (Exception e) {
+                System.err.println("General error: " + e.getMessage());
+            }
         }
 
     }
