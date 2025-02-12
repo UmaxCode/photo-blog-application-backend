@@ -257,7 +257,7 @@ Resources:
             Effect: Allow
             Action:
               - dynamodb:Query
-            Resource: !GetAtt WebSocketConnectionsTable.Arn
+            Resource: !Sub ${WebSocketConnectionsTable.Arn}/index/emailIndex
         - Statement:
             - Effect: Allow
               Action:
