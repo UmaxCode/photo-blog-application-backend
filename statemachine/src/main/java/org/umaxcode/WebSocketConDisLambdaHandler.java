@@ -30,7 +30,6 @@ public class WebSocketConDisLambdaHandler implements RequestHandler<APIGatewayV2
 
         String routeKey = event.getRequestContext().getRouteKey();
         String connectionId = event.getRequestContext().getConnectionId();
-        String email = event.getQueryStringParameters().get("email");
         APIGatewayV2WebSocketResponse errorResponse = new APIGatewayV2WebSocketResponse();
         errorResponse.setStatusCode(401);
         errorResponse.setBody("Unsupported route key: " + routeKey);
@@ -42,6 +41,7 @@ public class WebSocketConDisLambdaHandler implements RequestHandler<APIGatewayV2
 
         switch (routeKey) {
             case "$connect":
+                String email = event.getQueryStringParameters().get("email");
                 handleConnect(connectionId, email);
                 break;
             case "$disconnect":
