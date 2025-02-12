@@ -252,6 +252,7 @@ Resources:
             Effect: Allow
             Action:
               - dynamodb:PutItem
+              - dynamodb:Query
             Resource: !GetAtt PicturesGlobalTable.Arn
         - Statement:
             - Effect: Allow
