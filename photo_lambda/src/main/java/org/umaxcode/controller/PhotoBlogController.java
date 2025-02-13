@@ -65,6 +65,17 @@ public class PhotoBlogController {
                 .build();
     }
 
+    @GetMapping("/recycle-bin")
+    @ResponseStatus(HttpStatus.OK)
+    public SuccessResponse getAllPhotosInRecyclingBin(@AuthenticationPrincipal Jwt jwt){
+
+        List<GetPhotoDto> recycledImages = photoBlogService.retrieveAllImagesInRecyclingBin(jwt);
+        return SuccessResponse.builder()
+                .message("Photos in recycling bin retrieved successfully")
+                .data(recycledImages)
+                .build();
+    }
+
     @PatchMapping("/{id}/recycle-bin/restore")
     @ResponseStatus(HttpStatus.OK)
     public SuccessResponse restorePhotoFromRecycleBin(@PathVariable String id) {

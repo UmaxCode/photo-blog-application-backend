@@ -105,6 +105,18 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
                 .build();
     }
 
+    @Override
+    public List<GetPhotoDto> retrieveAllImagesInRecyclingBin(Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+
+        List<Map<String, String>> recycledItemsDetails = photoBlogRepository.getAllItemsInRecycleBin(email);
+        if (recycledItemsDetails.isEmpty()) {
+            return List.of();
+        }
+
+        return s3Service.getObjects(recycledItemsDetails);
+    }
+
     private String extractObjectKey(String s3Url) {
         return s3Url.substring(s3Url.lastIndexOf("/") + 1);
     }

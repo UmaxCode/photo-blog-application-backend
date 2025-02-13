@@ -168,4 +168,28 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
             throw new PhotoBlogException("Photo has already been restored");
         }
     }
+
+    @Override
+    public List<Map<String, String>> getAllItemsInRecycleBin(String email) {
+
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(tableName)
+                .filterExpression("#owner <> :email AND isPlacedInRecycleBin = :true")
+                .expressionAttributeValues(Map.of(
+                        ":email", AttributeValue.builder().s(email).build(),
+                        ":true", AttributeValue.builder().n("1").build()
+                ))
+                .expressionAttributeNames(Map.of(
+                        "#owner", "owner"
+                ))
+                .build();
+
+        List<Map<String, AttributeValue>> items = dynamoDbClient.scan(scanRequest).items();
+
+        return items.stream()
+                .map(photo -> Map.of(
+                        "picId", photo.get("picId").s(),
+                        "objectKey", extractObjectKey(photo.get("picUrl").s())))
+                .toList();
+    }
 }

@@ -20,4 +20,6 @@ public interface PhotoBlogService {
     GetPhotoDto moveToRecycleBin(String id);
 
     GetPhotoDto restoreFromRecycleBin(String id);
+
+    List<GetPhotoDto> retrieveAllImagesInRecyclingBin(Jwt jwt);
 }
