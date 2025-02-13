@@ -73,7 +73,7 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     }
 
     @Override
-    public void deleteImage(String id) {
+    public void deleteImage(String id, Jwt jwt) {
 
         Map<String, AttributeValue> deleteResponse = photoBlogRepository.deleteItem(id);
         if (!deleteResponse.isEmpty()) {
@@ -86,23 +86,38 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     }
 
     @Override
-    public GetPhotoDto moveToRecycleBin(String id) {
+    public GetPhotoDto moveToRecycleBin(String id, Jwt jwt) {
+        String sub = jwt.getClaimAsString("sub");
         Map<String, AttributeValue> returnedAttribute = photoBlogRepository.addItemToRecycleBin(id);
         String objectKey = extractObjectKey(returnedAttribute.get("picUrl").s());
-        s3Service.moveObject(objectKey, RECYCLE_BIN_PATH + objectKey);
+        s3Service.moveObject(objectKey, RECYCLE_BIN_PATH + sub + "/" + objectKey);
         return GetPhotoDto.builder()
                 .imgId(returnedAttribute.get("picId").s())
                 .build();
     }
 
     @Override
-    public GetPhotoDto restoreFromRecycleBin(String id) {
+    public GetPhotoDto restoreFromRecycleBin(String id, Jwt jwt) {
+        String sub = jwt.getClaimAsString("sub");
         Map<String, AttributeValue> returnedAttribute = photoBlogRepository.restoreFromRecycleBin(id);
         String objectKey = extractObjectKey(returnedAttribute.get("picUrl").s());
-        s3Service.moveObject(RECYCLE_BIN_PATH + objectKey, objectKey);
+        s3Service.moveObject(RECYCLE_BIN_PATH + sub + "/"
+                + objectKey, objectKey);
         return GetPhotoDto.builder()
                 .imgId(returnedAttribute.get("picId").s())
                 .build();
+    }
+
+    @Override
+    public List<GetPhotoDto> retrieveAllImagesInRecyclingBin(Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        String sub = jwt.getClaimAsString("sub");
+        List<Map<String, String>> recycledItemsDetails = photoBlogRepository.getAllItemsInRecycleBin(email, sub);
+        if (recycledItemsDetails.isEmpty()) {
+            return List.of();
+        }
+
+        return s3Service.getObjects(recycledItemsDetails);
     }
 
     private String extractObjectKey(String s3Url) {

@@ -131,6 +131,33 @@ Resources:
       Domain: !Sub ${AWS::StackName}-user-pool-domain
       UserPoolId: !Ref UserPool
 
+  PostConfAuthLambdaHandler: # Lambda function for handling post confirmation and authentication
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-postConfAuthLambda
+      Handler: org.umaxcode.PostConfAuthLambdaHandler::handleRequest
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Subscribe
+                  - sns:SetSubscriptionAttributes
+                  - sns:publish
+                Resource: !Ref SNSNotificationTopic
+      CodeUri: cognito_lambda
+      Environment:
+        Variables:
+          SNS_NOTIFICATION_TOPIC_ARN: !Ref SNSNotificationTopic
+      Events:
+        CognitoEvents:
+          Type: Cognito
+          Properties:
+            UserPool: !Ref UserPool
+            Trigger:
+              - PostConfirmation
+              - PostAuthentication
+
   PicturesGlobalTable: # DynamoDB Global Table for image info
     Type: AWS::DynamoDB::Table
     Properties:
@@ -159,13 +186,13 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-#      Replicas:
-#        - Region: !Ref PrimaryRegion
-#        - Region: !Ref DRRegion
-#      SSESpecification:
-#        SSEEnabled: true
-#      StreamSpecification:
-#        StreamViewType: NEW_IMAGE
+  #      Replicas:
+  #        - Region: !Ref PrimaryRegion
+  #        - Region: !Ref DRRegion
+  #      SSESpecification:
+  #        SSEEnabled: true
+  #      StreamSpecification:
+  #        StreamViewType: NEW_IMAGE
 
   StagingBucket: # Staging S3 Bucket (for uploading images before processing)
     Type: AWS::S3::Bucket
@@ -227,6 +254,11 @@ Resources:
               - dynamodb:PutItem
             Resource: !GetAtt PicturesGlobalTable.Arn
         - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:Query
+            Resource: !Sub ${WebSocketConnectionsTable.Arn}/index/emailIndex
+        - Statement:
             - Effect: Allow
               Action:
                 - execute-api:ManageConnections
@@ -251,11 +283,11 @@ Resources:
               - ".amazonaws.com/"
               - !Ref WebSocketStage
 
-  ImageProcessingFailureTopic: # SNS for receiving image processing failed notification
+  SNSNotificationTopic: # SNS for receiving notifications
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub ${AWS::StackName}-ImgProFailTopic
-      DisplayName: Image Processing Failure Notifications Topic
+      TopicName: !Sub ${AWS::StackName}-SnsNotificationTopic
+      DisplayName: SNS notification topic for receiving notifications
 
   ImageProcessingFailureNotificationFunction: # Lambda function for sending notification for fail image processing
     Type: AWS::Serverless::Function
@@ -268,11 +300,11 @@ Resources:
             - Effect: Allow
               Action:
                 - sns:publish
-              Resource: !Ref ImageProcessingFailureTopic
+              Resource: !Ref SNSNotificationTopic
       CodeUri: statemachine
       Environment:
         Variables:
-          IMG_PRO_NOTIFICATION_TOPIC_ARN: !Ref ImageProcessingFailureTopic
+          SNS_NOTIFICATION_TOPIC_ARN: !Ref SNSNotificationTopic
 
   PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
     Type: AWS::S3::Bucket
@@ -286,7 +318,7 @@ Resources:
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: "$request.body.action"
 
-  ConnectRoute:  # connect route for the websocket
+  ConnectRoute: # connect route for the websocket
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref WebSocketApi
@@ -346,11 +378,20 @@ Resources:
     Properties:
       TableName: !Sub ${AWS::StackName}-WebSocketConnections
       AttributeDefinitions:
+        - AttributeName: connectionId
+          AttributeType: S
         - AttributeName: email
           AttributeType: S
       KeySchema:
-        - AttributeName: email
+        - AttributeName: connectionId
           KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: emailIndex
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST
 
   WebSocketDeployment:

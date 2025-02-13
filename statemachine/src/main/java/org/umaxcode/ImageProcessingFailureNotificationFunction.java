@@ -15,7 +15,7 @@ public class ImageProcessingFailureNotificationFunction implements RequestHandle
     private final SnsClient snsClient;
 
     public ImageProcessingFailureNotificationFunction() {
-        this.topicArn = System.getenv("IMG_PRO_NOTIFICATION_TOPIC_ARN");
+        this.topicArn = System.getenv("SNS_NOTIFICATION_TOPIC_ARN");
         this.snsClient = SnsClient.create();
     }
 
@@ -28,7 +28,7 @@ public class ImageProcessingFailureNotificationFunction implements RequestHandle
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
         messageAttributes.put("endpointEmail", MessageAttributeValue.builder()
                 .dataType("String")
-                .stringValue("xidide7271@eluxeer.com")
+                .stringValue(email)
                 .build());
 
         PublishRequest publishRequest = PublishRequest.builder()
