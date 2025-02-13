@@ -56,9 +56,9 @@ public class PhotoBlogController {
 
     @PatchMapping("/{id}/recycle-bin")
     @ResponseStatus(HttpStatus.OK)
-    public SuccessResponse movePhotoToRecycleBin(@PathVariable String id) {
+    public SuccessResponse movePhotoToRecycleBin(@PathVariable String id, @AuthenticationPrincipal Jwt jwt) {
 
-        GetPhotoDto updateResponse = photoBlogService.moveToRecycleBin(id);
+        GetPhotoDto updateResponse = photoBlogService.moveToRecycleBin(id, jwt);
         return SuccessResponse.builder()
                 .message("Photo moved to recycling bin successfully")
                 .data(updateResponse)
@@ -78,9 +78,9 @@ public class PhotoBlogController {
 
     @PatchMapping("/{id}/recycle-bin/restore")
     @ResponseStatus(HttpStatus.OK)
-    public SuccessResponse restorePhotoFromRecycleBin(@PathVariable String id) {
+    public SuccessResponse restorePhotoFromRecycleBin(@PathVariable String id, @AuthenticationPrincipal Jwt jwt) {
 
-        GetPhotoDto updateResponse = photoBlogService.restoreFromRecycleBin(id);
+        GetPhotoDto updateResponse = photoBlogService.restoreFromRecycleBin(id, jwt);
         return SuccessResponse.builder()
                 .message("Photo has been restored successfully")
                 .data(updateResponse)
@@ -89,9 +89,9 @@ public class PhotoBlogController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletePhoto(@PathVariable String id) {
+    public void deletePhoto(@PathVariable String id, @AuthenticationPrincipal Jwt jwt) {
 
-        photoBlogService.deleteImage(id);
+        photoBlogService.deleteImage(id, jwt);
     }
 
 }
