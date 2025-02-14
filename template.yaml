@@ -12,8 +12,11 @@ Globals:
     Timeout: 30
 
 Parameters:
-  CustomDomainName:
-    Description: Custom domain name for api gateway
+  CustomDomainNamePrimary:
+    Description: Custom domain name for api gateway of primary region
+    Type: String
+  CustomDomainNameDR:
+    Description: Custom domain name for api gateway of disaster recovery region
     Type: String
   PrimaryACMCertificateArn:
     Description: ACM certificate arn for the primary region
@@ -81,7 +84,10 @@ Resources:
   ApiGatewayDomainName: # Custom Domain for API Gateway
     Type: AWS::ApiGateway::DomainName
     Properties:
-      DomainName: !Ref CustomDomainName
+      DomainName: !If
+        - IsPrimaryRegion
+        - !Ref CustomDomainNamePrimary
+        - !Ref CustomDomainNameDR
       RegionalCertificateArn: !If
         - IsPrimaryRegion
         - !Ref PrimaryACMCertificateArn
