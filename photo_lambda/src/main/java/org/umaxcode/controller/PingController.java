@@ -17,4 +17,11 @@ public class PingController {
         pong.put("pong", "Hello, World!");
         return pong;
     }
+
+    @RequestMapping(path = "/health", method = RequestMethod.GET)
+    public Map<String, String> health() {
+        Map<String, String> health = new HashMap<>();
+        health.put("status", "Application is health");
+        return health;
+    }
 }
