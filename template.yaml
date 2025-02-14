@@ -94,8 +94,8 @@ Resources:
     Type: AWS::ApiGateway::BasePathMapping
     Properties:
       DomainName: !Ref ApiGatewayDomainName
-      RestApiId: !Sub ${ServerlessRestApi}
-      Stage: Prod
+      RestApiId: !Ref ServerlessRestApi
+      Stage: !Ref ServerlessRestApi.Stage
 
   UserPool: # Cognito User Pool
     Type: AWS::Cognito::UserPool
