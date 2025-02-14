@@ -106,7 +106,7 @@ jobs:
             --s3-bucket ${TESTING_ARTIFACTS_BUCKET} \
             --no-fail-on-empty-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE} \
-            -parameter-overrides \
+            --parameter-overrides \
               CustomDomainName=${{ secrets.CUSTOM_DOMAIN_NAME }} \
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
               DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }}
