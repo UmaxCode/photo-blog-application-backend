@@ -110,7 +110,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE} \
             --parameter-overrides \
-              CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}}
+              CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
               DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }}
@@ -221,7 +221,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE}
             --parameter-overrides \
-              CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}}
+              CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
               DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }}
@@ -272,7 +272,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --role-arn ${PROD_CLOUDFORMATION_EXECUTION_ROLE}
             --parameter-overrides \
-              CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}}
+              CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
               DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }}
@@ -314,8 +314,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --role-arn ${PROD_CLOUDFORMATION_EXECUTION_ROLE}
             --parameter-overrides \
-              CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}}
+              CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
               DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }}
-
