@@ -27,6 +27,7 @@ env:
   PROD_PIPELINE_EXECUTION_ROLE: ${{ secrets.PROD_PIPELINE_EXECUTION_ROLE }}
   PROD_CLOUDFORMATION_EXECUTION_ROLE: ${{ secrets.PROD_CLOUDFORMATION_EXECUTION_ROLE }}
   PROD_ARTIFACTS_BUCKET: ${{ secrets.PROD_ARTIFACTS_BUCKET }}
+  DR_ARTIFACTS_BUCKET: ${{ secrets.DR_ARTIFACTS_BUCKET }}
 
   DR_STACK_NAME: photo-blog-app-drs
   # If there are functions with "Image" PackageType in your template,
@@ -300,7 +301,7 @@ jobs:
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.DR_REGION }}
           role-to-assume: ${{ env.PROD_PIPELINE_EXECUTION_ROLE }}
-          role-session-name: prod-deployment
+          role-session-name: prod-dr-deployment
           role-duration-seconds: 3600
           role-skip-session-tagging: true
 
@@ -310,7 +311,7 @@ jobs:
             --template packaged-prod.yaml \
             --capabilities CAPABILITY_IAM \
             --region ${DR_REGION} \
-            --resolve-s3 \
+            --s3-bucket ${DR_ARTIFACTS_BUCKET} \
             --no-fail-on-empty-changeset \
             --role-arn ${PROD_CLOUDFORMATION_EXECUTION_ROLE} \
             --parameter-overrides \
