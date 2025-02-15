@@ -39,7 +39,7 @@ jobs:
       - run: |
           # trigger the tests here
 
-  build-and-package-for-production:
+  build-and-package-for-primary:
     if: github.ref == 'refs/heads/main'
     needs: [test]
     runs-on: ubuntu-latest
@@ -52,41 +52,67 @@ jobs:
       - name: Build resources
         run: sam build --template ${SAM_TEMPLATE} --use-container
 
-      - name: Assume the prod pipeline user role
+      - name: Assume the primary pipeline user role
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.PRIMARY_REGION }}
           role-to-assume: ${{ env.PRIMARY_PIPELINE_EXECUTION_ROLE }}
-          role-session-name: prod-packaging
+          role-session-name: primary-packaging
           role-duration-seconds: 3600
           role-skip-session-tagging: true
 
-      - name: Upload artifacts to production artifact buckets
+      - name: Upload artifacts to primary artifact buckets
         run: |
           sam package \
             --s3-bucket ${PRIMARY_ARTIFACTS_BUCKET} \
             --region ${PRIMARY_REGION} \
-            --output-template-file packaged-prod.yaml
+            --output-template-file packaged-primary.yaml
 
       - uses: actions/upload-artifact@v4
         with:
-          name: packaged-prod.yaml
-          path: packaged-prod.yaml
+          name: packaged-primary.yaml
+          path: packaged-primary.yaml
 
-  integration-test:
+  build-and-package-for-secondary:
     if: github.ref == 'refs/heads/main'
-    needs: [build-and-package-for-production]
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: |
-          # trigger the integration tests here
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
 
-  deploy-prod:
+      - name: Build resources
+        run: sam build --template ${SAM_TEMPLATE} --use-container
+
+      - name: Assume the secondary pipeline user role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.SECONDARY_REGION }}
+          role-to-assume: ${{ env.SECONDARY_PIPELINE_EXECUTION_ROLE }}
+          role-session-name: secondary-packaging
+          role-duration-seconds: 3600
+          role-skip-session-tagging: true
+
+      - name: Upload artifacts to secondary artifact buckets
+        run: |
+          sam package \
+            --s3-bucket ${SECONDARY_ARTIFACTS_BUCKET} \
+            --region ${SECONDARY_REGION} \
+            --output-template-file packaged-secondary.yaml
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packaged-secondary.yaml
+          path: packaged-secondary.yaml
+
+  deploy-primary:
     if: github.ref == 'refs/heads/main'
-    needs: [integration-test]
     runs-on: ubuntu-latest
     # Configure GitHub Action Environment to have a manual approval step before deployment to production
     # https://docs.github.com/en/actions/reference/environments
@@ -98,23 +124,23 @@ jobs:
           use-installer: true
       - uses: actions/download-artifact@v4
         with:
-          name: packaged-prod.yaml
+          name: packaged-primary.yaml
 
-      - name: Assume the prod pipeline user role
+      - name: Assume the primary pipeline user role
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.PRIMARY_REGION }}
           role-to-assume: ${{ env.PRIMARY_PIPELINE_EXECUTION_ROLE }}
-          role-session-name: prod-deployment
+          role-session-name: primary-deployment
           role-duration-seconds: 3600
           role-skip-session-tagging: true
 
-      - name: Deploy to production account
+      - name: Deploy to primary region
         run: |
           sam deploy --stack-name ${PRIMARY_STACK_NAME} \
-            --template packaged-prod.yaml \
+            --template packaged-primary.yaml \
             --capabilities CAPABILITY_IAM \
             --region ${PRIMARY_REGION} \
             --s3-bucket ${PRIMARY_ARTIFACTS_BUCKET} \
@@ -126,9 +152,8 @@ jobs:
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
               DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }}
 
-  deploy-prod-drs:
+  deploy-secondary:
     if: github.ref == 'refs/heads/main'
-    needs: [integration-test]
     runs-on: ubuntu-latest
     # Configure GitHub Action Environment to have a manual approval step before deployment to production
     # https://docs.github.com/en/actions/reference/environments
@@ -140,23 +165,23 @@ jobs:
           use-installer: true
       - uses: actions/download-artifact@v4
         with:
-          name: packaged-prod.yaml
+          name: packaged-secondary.yaml
 
-      - name: Assume the prod pipeline user role
+      - name: Assume the secondary pipeline user role
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.SECONDARY_REGION }}
           role-to-assume: ${{ env.SECONDARY_PIPELINE_EXECUTION_ROLE }}
-          role-session-name: prod-dr-deployment
+          role-session-name: secondary-deployment
           role-duration-seconds: 3600
           role-skip-session-tagging: true
 
-      - name: Deploy to production account disaster recovery
+      - name: Deploy to secondary region
         run: |
           sam deploy --stack-name ${SECONDARY_STACK_NAME} \
-            --template packaged-prod.yaml \
+            --template packaged-secondary.yaml \
             --capabilities CAPABILITY_IAM \
             --region ${SECONDARY_REGION} \
             --s3-bucket ${SECONDARY_ARTIFACTS_BUCKET} \
