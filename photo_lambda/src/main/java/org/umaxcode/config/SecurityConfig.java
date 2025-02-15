@@ -24,7 +24,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/ping", "/pong").permitAll()
+                        .requestMatchers("/ping", "/pong", "/health").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(jwt -> jwt.jwt(Customizer.withDefaults()))

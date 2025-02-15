@@ -12,6 +12,18 @@ Globals:
     Timeout: 30
 
 Parameters:
+  CustomDomainNamePrimary:
+    Description: Custom domain name for api gateway of primary region
+    Type: String
+  CustomDomainNameDR:
+    Description: Custom domain name for api gateway of disaster recovery region
+    Type: String
+  PrimaryACMCertificateArn:
+    Description: ACM certificate arn for the primary region
+    Type: String
+  DRACMCertificateArn:
+    Description: ACM certificate arn for the disaster recovery region
+    Type: String
   DynamoTableName:
     Description: Table name of DynamoDB Table
     Type: String
@@ -29,6 +41,9 @@ Parameters:
     Type: String
     Default: https://spring.io/guides/gs/securing-web
 
+Conditions:
+  IsPrimaryRegion: !Equals [ !Ref AWS::Region, !Ref PrimaryRegion ]
+  IsDRRegion: !Equals [ !Ref AWS::Region, !Ref DRRegion ]
 
 Resources:
   PhotoBlogApplicationFunction: # Lambda function for api gateway
@@ -65,6 +80,28 @@ Resources:
           Properties:
             Path: /{proxy+}
             Method: any
+
+  ApiGatewayDomainName: # Custom Domain for API Gateway
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: !If
+        - IsPrimaryRegion
+        - !Ref CustomDomainNamePrimary
+        - !Ref CustomDomainNameDR
+      RegionalCertificateArn: !If
+        - IsPrimaryRegion
+        - !Ref PrimaryACMCertificateArn
+        - !Ref DRACMCertificateArn
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  CustomDomainBasePathMapping: # Base path mapping for custom domain
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref ApiGatewayDomainName
+      RestApiId: !Ref ServerlessRestApi
+      Stage: !Ref ServerlessRestApi.Stage
 
   UserPool: # Cognito User Pool
     Type: AWS::Cognito::UserPool
@@ -159,7 +196,8 @@ Resources:
               - PostAuthentication
 
   PicturesGlobalTable: # DynamoDB Global Table for image info
-    Type: AWS::DynamoDB::Table
+    Type: AWS::DynamoDB::GlobalTable
+    Condition: IsPrimaryRegion
     Properties:
       TableName: !Sub ${AWS::StackName}-${DynamoTableName}
       BillingMode: PAY_PER_REQUEST
@@ -173,6 +211,15 @@ Resources:
       KeySchema:
         - AttributeName: picId
           KeyType: HASH
+      Replicas:
+        - Region: !Ref PrimaryRegion
+          PointInTimeRecoverySpecification:
+            PointInTimeRecoveryEnabled: true
+        - Region: !Ref DRRegion
+          PointInTimeRecoverySpecification:
+            PointInTimeRecoveryEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
       GlobalSecondaryIndexes:
         - IndexName: ownerIndex
           KeySchema:
@@ -186,13 +233,6 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-  #      Replicas:
-  #        - Region: !Ref PrimaryRegion
-  #        - Region: !Ref DRRegion
-  #      SSESpecification:
-  #        SSEEnabled: true
-  #      StreamSpecification:
-  #        StreamViewType: NEW_IMAGE
 
   StagingBucket: # Staging S3 Bucket (for uploading images before processing)
     Type: AWS::S3::Bucket
@@ -310,6 +350,8 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub ${AWS::StackName}-primary-bucket
+      VersioningConfiguration:
+        Status: Enabled
 
   WebSocketApi: # Websocket Api for notifying the client when image processing is successful
     Type: AWS::ApiGatewayV2::Api
