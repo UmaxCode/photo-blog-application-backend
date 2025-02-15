@@ -18,7 +18,7 @@ import java.util.Map;
 public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
 
     private final DynamoDbClient dynamoDbClient;
-
+    private final String RECYCLE_BIN_PATH = "recycled/";
     @Value("${application.aws.tableName}")
     private String tableName;
 
@@ -63,9 +63,10 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
                 .tableName(tableName)
                 .indexName("ownerIndex")
                 .keyConditionExpression("#owner = :email")
-                .filterExpression("isPlacedInRecycleBin = 0")
+                .filterExpression("isPlacedInRecycleBin = :false")
                 .expressionAttributeValues(Map.of(
-                        ":email", AttributeValue.builder().s(email).build()
+                        ":email", AttributeValue.builder().s(email).build(),
+                        ":false", AttributeValue.builder().n("0").build()
                 ))
                 .expressionAttributeNames(Map.of(
                         "#owner", "owner"
@@ -78,9 +79,10 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
     private List<Map<String, AttributeValue>> getByOthers(String email) {
         ScanRequest scanRequest = ScanRequest.builder()
                 .tableName(tableName)
-                .filterExpression("#owner <> :email, isPlacedInRecycleBin = 0")
+                .filterExpression("#owner <> :email AND isPlacedInRecycleBin = :false")
                 .expressionAttributeValues(Map.of(
-                        ":email", AttributeValue.builder().s(email).build()
+                        ":email", AttributeValue.builder().s(email).build(),
+                        ":false", AttributeValue.builder().n("0").build()
                 ))
                 .expressionAttributeNames(Map.of(
                         "#owner", "owner"
@@ -165,5 +167,29 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
         } catch (ConditionalCheckFailedException ex) {
             throw new PhotoBlogException("Photo has already been restored");
         }
+    }
+
+    @Override
+    public List<Map<String, String>> getAllItemsInRecycleBin(String email, String sub) {
+
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(tableName)
+                .filterExpression("#owner <> :email AND isPlacedInRecycleBin = :true")
+                .expressionAttributeValues(Map.of(
+                        ":email", AttributeValue.builder().s(email).build(),
+                        ":true", AttributeValue.builder().n("1").build()
+                ))
+                .expressionAttributeNames(Map.of(
+                        "#owner", "owner"
+                ))
+                .build();
+
+        List<Map<String, AttributeValue>> items = dynamoDbClient.scan(scanRequest).items();
+
+        return items.stream()
+                .map(photo -> Map.of(
+                        "picId", photo.get("picId").s(),
+                        "objectKey", RECYCLE_BIN_PATH + sub + "/" + extractObjectKey(photo.get("picUrl").s())))
+                .toList();
     }
 }

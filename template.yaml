@@ -12,6 +12,18 @@ Globals:
     Timeout: 30
 
 Parameters:
+  CustomDomainNamePrimary:
+    Description: Custom domain name for api gateway of primary region
+    Type: String
+  CustomDomainNameDR:
+    Description: Custom domain name for api gateway of disaster recovery region
+    Type: String
+  PrimaryACMCertificateArn:
+    Description: ACM certificate arn for the primary region
+    Type: String
+  DRACMCertificateArn:
+    Description: ACM certificate arn for the disaster recovery region
+    Type: String
   DynamoTableName:
     Description: Table name of DynamoDB Table
     Type: String
@@ -29,6 +41,9 @@ Parameters:
     Type: String
     Default: https://spring.io/guides/gs/securing-web
 
+Conditions:
+  IsPrimaryRegion: !Equals [ !Ref AWS::Region, !Ref PrimaryRegion ]
+  IsDRRegion: !Equals [ !Ref AWS::Region, !Ref DRRegion ]
 
 Resources:
   PhotoBlogApplicationFunction: # Lambda function for api gateway
@@ -58,6 +73,7 @@ Resources:
           AWS_DYNAMODB_TABLE_NAME: !Ref PicturesGlobalTable
           AWS_S3_STAGE_BUCKET_NAME: !Ref StagingBucket
           AWS_S3_PRIMARY_BUCKET_NAME: !Ref PrimaryBucket
+          AWS_COGNITO_USER_POOL_ID: !Ref UserPool
       Events:
         ProxyResource:
           Type: Api
@@ -65,12 +81,32 @@ Resources:
             Path: /{proxy+}
             Method: any
 
+  ApiGatewayDomainName: # Custom Domain for API Gateway
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: !If
+        - IsPrimaryRegion
+        - !Ref CustomDomainNamePrimary
+        - !Ref CustomDomainNameDR
+      RegionalCertificateArn: !If
+        - IsPrimaryRegion
+        - !Ref PrimaryACMCertificateArn
+        - !Ref DRACMCertificateArn
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  CustomDomainBasePathMapping: # Base path mapping for custom domain
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref ApiGatewayDomainName
+      RestApiId: !Ref ServerlessRestApi
+      Stage: !Ref ServerlessRestApi.Stage
+
   UserPool: # Cognito User Pool
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: !Sub ${AWS::StackName}-user-pool
-      AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: true
       AutoVerifiedAttributes:
         - email
       UsernameAttributes:
@@ -95,7 +131,6 @@ Resources:
           RequireLowercase: true
           RequireNumbers: true
           RequireSymbols: true
-          TemporaryPasswordValidityDays: 7
 
   UserPoolClient: # Cognito User Pool Client
     Type: AWS::Cognito::UserPoolClient
@@ -133,8 +168,36 @@ Resources:
       Domain: !Sub ${AWS::StackName}-user-pool-domain
       UserPoolId: !Ref UserPool
 
+  PostConfAuthLambdaHandler: # Lambda function for handling post confirmation and authentication
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-postConfAuthLambda
+      Handler: org.umaxcode.PostConfAuthLambdaHandler::handleRequest
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Subscribe
+                  - sns:SetSubscriptionAttributes
+                  - sns:publish
+                Resource: !Ref SNSNotificationTopic
+      CodeUri: cognito_lambda
+      Environment:
+        Variables:
+          SNS_NOTIFICATION_TOPIC_ARN: !Ref SNSNotificationTopic
+      Events:
+        CognitoEvents:
+          Type: Cognito
+          Properties:
+            UserPool: !Ref UserPool
+            Trigger:
+              - PostConfirmation
+              - PostAuthentication
+
   PicturesGlobalTable: # DynamoDB Global Table for image info
-    Type: AWS::DynamoDB::Table
+    Type: AWS::DynamoDB::GlobalTable
+    Condition: IsPrimaryRegion
     Properties:
       TableName: !Sub ${AWS::StackName}-${DynamoTableName}
       BillingMode: PAY_PER_REQUEST
@@ -145,11 +208,18 @@ Resources:
           AttributeType: S
         - AttributeName: picUrl
           AttributeType: S
-        - AttributeName: isPlacedInRecycleBin
-          AttributeType: N
       KeySchema:
         - AttributeName: picId
           KeyType: HASH
+      Replicas:
+        - Region: !Ref PrimaryRegion
+          PointInTimeRecoverySpecification:
+            PointInTimeRecoveryEnabled: true
+        - Region: !Ref DRRegion
+          PointInTimeRecoverySpecification:
+            PointInTimeRecoveryEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
       GlobalSecondaryIndexes:
         - IndexName: ownerIndex
           KeySchema:
@@ -163,19 +233,6 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-        - IndexName: isPlacedInRecycleBinIndex
-          KeySchema:
-            - AttributeName: isPlacedInRecycleBin
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-#      Replicas:
-#        - Region: !Ref PrimaryRegion
-#        - Region: !Ref DRRegion
-#      SSESpecification:
-#        SSEEnabled: true
-#      StreamSpecification:
-#        StreamViewType: NEW_IMAGE
 
   StagingBucket: # Staging S3 Bucket (for uploading images before processing)
     Type: AWS::S3::Bucket
@@ -237,6 +294,11 @@ Resources:
               - dynamodb:PutItem
             Resource: !GetAtt PicturesGlobalTable.Arn
         - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:Query
+            Resource: !Sub ${WebSocketConnectionsTable.Arn}/index/emailIndex
+        - Statement:
             - Effect: Allow
               Action:
                 - execute-api:ManageConnections
@@ -261,11 +323,11 @@ Resources:
               - ".amazonaws.com/"
               - !Ref WebSocketStage
 
-  ImageProcessingFailureTopic: # SNS for receiving image processing failed notification
+  SNSNotificationTopic: # SNS for receiving notifications
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub ${AWS::StackName}-ImgProFailTopic
-      DisplayName: Image Processing Failure Notifications Topic
+      TopicName: !Sub ${AWS::StackName}-SnsNotificationTopic
+      DisplayName: SNS notification topic for receiving notifications
 
   ImageProcessingFailureNotificationFunction: # Lambda function for sending notification for fail image processing
     Type: AWS::Serverless::Function
@@ -278,16 +340,18 @@ Resources:
             - Effect: Allow
               Action:
                 - sns:publish
-              Resource: !Ref ImageProcessingFailureTopic
+              Resource: !Ref SNSNotificationTopic
       CodeUri: statemachine
       Environment:
         Variables:
-          IMG_PRO_NOTIFICATION_TOPIC_ARN: !Ref ImageProcessingFailureTopic
+          SNS_NOTIFICATION_TOPIC_ARN: !Ref SNSNotificationTopic
 
   PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub ${AWS::StackName}-primary-bucket
+      VersioningConfiguration:
+        Status: Enabled
 
   WebSocketApi: # Websocket Api for notifying the client when image processing is successful
     Type: AWS::ApiGatewayV2::Api
@@ -296,7 +360,7 @@ Resources:
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: "$request.body.action"
 
-  ConnectRoute:  # connect route for the websocket
+  ConnectRoute: # connect route for the websocket
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref WebSocketApi
@@ -356,11 +420,20 @@ Resources:
     Properties:
       TableName: !Sub ${AWS::StackName}-WebSocketConnections
       AttributeDefinitions:
+        - AttributeName: connectionId
+          AttributeType: S
         - AttributeName: email
           AttributeType: S
       KeySchema:
-        - AttributeName: email
+        - AttributeName: connectionId
           KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: emailIndex
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST
 
   WebSocketDeployment:

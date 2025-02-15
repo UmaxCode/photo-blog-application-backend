@@ -1,6 +1,7 @@
 package org.umaxcode.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.umaxcode.domain.dto.response.GetPhotoDto;
@@ -26,22 +27,25 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
 
 
     @Override
-    public String upload(MultipartFile pic) {
+    public String upload(MultipartFile pic, Jwt jwt) {
 
+        String firstName = jwt.getClaimAsString("given_name");
+        String lastName = jwt.getClaimAsString("family_name");
+        String email = jwt.getClaimAsString("email");
         return s3Service.upload(pic,
-                "example@gmail.com",
-                "firstName",
-                "lastName");
+                email,
+                firstName,
+                lastName);
     }
 
     @Override
     public PhotoUploadDTo generatePreSignedUrl(String id) {
 
         Map<String, AttributeValue> item = photoBlogRepository.getItem(id);
-
+        System.out.println("Results: " + item.size() + "values " + item);
         if (!item.isEmpty()) {
 
-            if (item.get("isPlacedInRecycleBin").s().equals("1")) {
+            if (item.get("isPlacedInRecycleBin").n().equals("1")) {
                 throw new PhotoBlogException("This image cannot be shared");
             }
 
@@ -57,9 +61,10 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     }
 
     @Override
-    public List<GetPhotoDto> getImages(String ownership) {
+    public List<GetPhotoDto> getImages(String ownership, Jwt jwt) {
         OwnershipType type = OwnershipType.fromString(ownership);
-        List<Map<String, String>> details = photoBlogRepository.getItemsDetails("example@gmail.com", type);
+        String email = jwt.getClaimAsString("email");
+        List<Map<String, String>> details = photoBlogRepository.getItemsDetails(email, type);
         if (details.isEmpty()) {
             return List.of();
         }
@@ -68,7 +73,7 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     }
 
     @Override
-    public void deleteImage(String id) {
+    public void deleteImage(String id, Jwt jwt) {
 
         Map<String, AttributeValue> deleteResponse = photoBlogRepository.deleteItem(id);
         if (!deleteResponse.isEmpty()) {
@@ -81,23 +86,38 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     }
 
     @Override
-    public GetPhotoDto moveToRecycleBin(String id) {
+    public GetPhotoDto moveToRecycleBin(String id, Jwt jwt) {
+        String sub = jwt.getClaimAsString("sub");
         Map<String, AttributeValue> returnedAttribute = photoBlogRepository.addItemToRecycleBin(id);
         String objectKey = extractObjectKey(returnedAttribute.get("picUrl").s());
-        s3Service.moveObject(objectKey, RECYCLE_BIN_PATH + objectKey);
+        s3Service.moveObject(objectKey, RECYCLE_BIN_PATH + sub + "/" + objectKey);
         return GetPhotoDto.builder()
                 .imgId(returnedAttribute.get("picId").s())
                 .build();
     }
 
     @Override
-    public GetPhotoDto restoreFromRecycleBin(String id) {
+    public GetPhotoDto restoreFromRecycleBin(String id, Jwt jwt) {
+        String sub = jwt.getClaimAsString("sub");
         Map<String, AttributeValue> returnedAttribute = photoBlogRepository.restoreFromRecycleBin(id);
         String objectKey = extractObjectKey(returnedAttribute.get("picUrl").s());
-        s3Service.moveObject(RECYCLE_BIN_PATH + objectKey, objectKey);
+        s3Service.moveObject(RECYCLE_BIN_PATH + sub + "/"
+                + objectKey, objectKey);
         return GetPhotoDto.builder()
                 .imgId(returnedAttribute.get("picId").s())
                 .build();
+    }
+
+    @Override
+    public List<GetPhotoDto> retrieveAllImagesInRecyclingBin(Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        String sub = jwt.getClaimAsString("sub");
+        List<Map<String, String>> recycledItemsDetails = photoBlogRepository.getAllItemsInRecycleBin(email, sub);
+        if (recycledItemsDetails.isEmpty()) {
+            return List.of();
+        }
+
+        return s3Service.getObjects(recycledItemsDetails);
     }
 
     private String extractObjectKey(String s3Url) {
