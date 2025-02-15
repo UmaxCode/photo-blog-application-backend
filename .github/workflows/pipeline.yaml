@@ -310,7 +310,7 @@ jobs:
             --template packaged-prod.yaml \
             --capabilities CAPABILITY_IAM \
             --region ${DR_REGION} \
-            --s3-bucket ${PROD_ARTIFACTS_BUCKET} \
+            --resolve-s3 \
             --no-fail-on-empty-changeset \
             --role-arn ${PROD_CLOUDFORMATION_EXECUTION_ROLE} \
             --parameter-overrides \
