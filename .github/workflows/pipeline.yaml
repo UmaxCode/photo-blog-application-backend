@@ -4,38 +4,31 @@ on:
   push:
     branches:
       - "main"
-      - "dev"
-      - "feat**"
-  delete:
-    branches:
-      - "feat**"
 
 env:
   PIPELINE_USER_ACCESS_KEY_ID: ${{ secrets.PIPELINE_USER_ACCESS_KEY_ID }}
   PIPELINE_USER_SECRET_ACCESS_KEY: ${{ secrets.PIPELINE_USER_SECRET_ACCESS_KEY }}
   SAM_TEMPLATE: template.yaml
-  TESTING_STACK_NAME: photo-blog-app-test
-  TESTING_PIPELINE_EXECUTION_ROLE: ${{ secrets.TESTING_PIPELINE_EXECUTION_ROLE }}
-  TESTING_CLOUDFORMATION_EXECUTION_ROLE: ${{ secrets.TESTING_CLOUDFORMATION_EXECUTION_ROLE }}
-  TESTING_ARTIFACTS_BUCKET: ${{ secrets.TESTING_ARTIFACTS_BUCKET }}
+
+  PRIMARY_STACK_NAME: photo-blog-primary
+  PRIMARY_PIPELINE_EXECUTION_ROLE: ${{ secrets.PRIMARY_PIPELINE_EXECUTION_ROLE }}
+  PRIMARY_CLOUDFORMATION_EXECUTION_ROLE: ${{ secrets.PRIMARY_CLOUDFORMATION_EXECUTION_ROLE }}
+  PRIMARY_ARTIFACTS_BUCKET: ${{ secrets.PRIMARY_ARTIFACTS_BUCKET }}
   # If there are functions with "Image" PackageType in your template,
   # uncomment the line below and add "--image-repository ${TESTING_IMAGE_REPOSITORY}" to
   # testing "sam package" and "sam deploy" commands.
   # TESTING_IMAGE_REPOSITORY = '0123456789.dkr.ecr.region.amazonaws.com/repository-name'
-  TESTING_REGION: ${{ secrets.AWS_REGION }}
-  PROD_STACK_NAME: photo-blog-app-prod
-  PROD_PIPELINE_EXECUTION_ROLE: ${{ secrets.PROD_PIPELINE_EXECUTION_ROLE }}
-  PROD_CLOUDFORMATION_EXECUTION_ROLE: ${{ secrets.PROD_CLOUDFORMATION_EXECUTION_ROLE }}
-  PROD_ARTIFACTS_BUCKET: ${{ secrets.PROD_ARTIFACTS_BUCKET }}
-  DR_ARTIFACTS_BUCKET: ${{ secrets.DR_ARTIFACTS_BUCKET }}
+  PRIMARY_REGION: ${{ secrets.PRIMARY_REGION }}
 
-  DR_STACK_NAME: photo-blog-app-drs
+  SECONDARY_STACK_NAME: photo-blog-secondary
+  SECONDARY_PIPELINE_EXECUTION_ROLE: ${{ secrets.SECONDARY_PIPELINE_EXECUTION_ROLE }}
+  SECONDARY_CLOUDFORMATION_EXECUTION_ROLE: ${{ secrets.SECONDARY_CLOUDFORMATION_EXECUTION_ROLE }}
+  SECONDARY_ARTIFACTS_BUCKET: ${{ secrets.SECONDARY_ARTIFACTS_BUCKET }}
   # If there are functions with "Image" PackageType in your template,
   # uncomment the line below and add "--image-repository ${PROD_IMAGE_REPOSITORY}" to
   # prod "sam package" and "sam deploy" commands.
   # PROD_IMAGE_REPOSITORY = '0123456789.dkr.ecr.region.amazonaws.com/repository-name'
-  PROD_REGION: ${{ secrets.AWS_REGION }}
-  DR_REGION: ${{secrets.DR_REGION}}
+  SECONDARY_REGION: ${{secrets.SECONDARY_REGION}}
 
 jobs:
   test:
@@ -45,112 +38,6 @@ jobs:
       - uses: actions/checkout@v3
       - run: |
           # trigger the tests here
-
-  delete-feature:
-    if: startsWith(github.event.ref, 'feat') && github.event_name == 'delete'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: aws-actions/setup-sam@v2
-        with:
-          use-installer: true
-
-      - name: Assume the testing pipeline user role
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.TESTING_REGION }}
-          role-to-assume: ${{ env.TESTING_PIPELINE_EXECUTION_ROLE }}
-          role-session-name: testing-packaging
-          role-duration-seconds: 3600
-          role-skip-session-tagging: true
-
-      - name: Delete feature branch stack
-        env:
-          FEATURE_BRANCH_NAME: ${{ github.event.ref }}
-        run: |
-          sam delete \
-            --stack-name $(echo ${FEATURE_BRANCH_NAME##*/} | tr -cd '[a-zA-Z0-9-]') \
-            --region ${TESTING_REGION} \
-            --no-prompts
-
-  build-and-deploy-feature:
-    # this stage is triggered only for feature branches (feat*),
-    # which will build the stack and deploy to a stack named with branch name.
-    # https://github.com/actions/setup-python
-    # https://github.com/aws-actions/configure-aws-credentials#notice-node12-deprecation-warning
-    if: startsWith(github.ref, 'refs/heads/feat')
-    needs: [test]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: aws-actions/setup-sam@v2
-        with:
-          use-installer: true
-      - run: sam build --template ${SAM_TEMPLATE} --use-container
-
-      - name: Assume the testing pipeline user role
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.TESTING_REGION }}
-          role-to-assume: ${{ env.TESTING_PIPELINE_EXECUTION_ROLE }}
-          role-session-name: feature-deployment
-          role-duration-seconds: 3600
-          role-skip-session-tagging: true
-
-      - name: Deploy to feature stack in the testing account
-        shell: bash
-        run: |
-          sam deploy --stack-name $(echo ${GITHUB_REF##*/} | tr -cd '[a-zA-Z0-9-]') \
-            --capabilities CAPABILITY_IAM \
-            --region ${TESTING_REGION} \
-            --s3-bucket ${TESTING_ARTIFACTS_BUCKET} \
-            --no-fail-on-empty-changeset \
-            --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE} \
-            --parameter-overrides \
-              CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
-              CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
-              PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
-              DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }}
-
-  build-and-package-for-testing:
-    if: github.ref == 'refs/heads/dev'
-    needs: [test]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: aws-actions/setup-sam@v2
-        with:
-          use-installer: true
-
-      - name: Build resources
-        run: sam build --template ${SAM_TEMPLATE} --use-container
-
-      - name: Assume the testing pipeline user role
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.TESTING_REGION }}
-          role-to-assume: ${{ env.TESTING_PIPELINE_EXECUTION_ROLE }}
-          role-session-name: testing-packaging
-          role-duration-seconds: 3600
-          role-skip-session-tagging: true
-
-      - name: Upload artifacts to testing artifact buckets
-        run: |
-          sam package \
-            --s3-bucket ${TESTING_ARTIFACTS_BUCKET} \
-            --region ${TESTING_REGION} \
-            --output-template-file packaged-testing.yaml
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: packaged-testing.yaml
-          path: packaged-testing.yaml
 
   build-and-package-for-production:
     if: github.ref == 'refs/heads/main'
@@ -170,8 +57,8 @@ jobs:
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.PROD_REGION }}
-          role-to-assume: ${{ env.PROD_PIPELINE_EXECUTION_ROLE }}
+          aws-region: ${{ env.PRIMARY_REGION }}
+          role-to-assume: ${{ env.PRIMARY_PIPELINE_EXECUTION_ROLE }}
           role-session-name: prod-packaging
           role-duration-seconds: 3600
           role-skip-session-tagging: true
@@ -179,53 +66,14 @@ jobs:
       - name: Upload artifacts to production artifact buckets
         run: |
           sam package \
-            --s3-bucket ${PROD_ARTIFACTS_BUCKET} \
-            --region ${PROD_REGION} \
+            --s3-bucket ${PRIMARY_ARTIFACTS_BUCKET} \
+            --region ${PRIMARY_REGION} \
             --output-template-file packaged-prod.yaml
 
       - uses: actions/upload-artifact@v4
         with:
           name: packaged-prod.yaml
           path: packaged-prod.yaml
-
-  deploy-testing:
-    if: github.ref == 'refs/heads/dev'
-    needs: [build-and-package-for-testing]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: aws-actions/setup-sam@v2
-        with:
-          use-installer: true
-      - uses: actions/download-artifact@v4
-        with:
-          name: packaged-testing.yaml
-
-      - name: Assume the testing pipeline user role
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.TESTING_REGION }}
-          role-to-assume: ${{ env.TESTING_PIPELINE_EXECUTION_ROLE }}
-          role-session-name: testing-deployment
-          role-duration-seconds: 3600
-          role-skip-session-tagging: true
-
-      - name: Deploy to testing account
-        run: |
-          sam deploy --stack-name ${TESTING_STACK_NAME} \
-            --template packaged-testing.yaml \
-            --capabilities CAPABILITY_IAM \
-            --region ${TESTING_REGION} \
-            --s3-bucket ${TESTING_ARTIFACTS_BUCKET} \
-            --no-fail-on-empty-changeset \
-            --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE}
-            --parameter-overrides \
-              CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
-              CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
-              PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
-              DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }}
 
   integration-test:
     if: github.ref == 'refs/heads/main'
@@ -257,21 +105,21 @@ jobs:
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.PROD_REGION }}
-          role-to-assume: ${{ env.PROD_PIPELINE_EXECUTION_ROLE }}
+          aws-region: ${{ env.PRIMARY_REGION }}
+          role-to-assume: ${{ env.PRIMARY_PIPELINE_EXECUTION_ROLE }}
           role-session-name: prod-deployment
           role-duration-seconds: 3600
           role-skip-session-tagging: true
 
       - name: Deploy to production account
         run: |
-          sam deploy --stack-name ${PROD_STACK_NAME} \
+          sam deploy --stack-name ${PRIMARY_STACK_NAME} \
             --template packaged-prod.yaml \
             --capabilities CAPABILITY_IAM \
-            --region ${PROD_REGION} \
-            --s3-bucket ${PROD_ARTIFACTS_BUCKET} \
+            --region ${PRIMARY_REGION} \
+            --s3-bucket ${PRIMARY_ARTIFACTS_BUCKET} \
             --no-fail-on-empty-changeset \
-            --role-arn ${PROD_CLOUDFORMATION_EXECUTION_ROLE} \
+            --role-arn ${PRIMARY_CLOUDFORMATION_EXECUTION_ROLE} \
             --parameter-overrides \
               CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
@@ -299,21 +147,21 @@ jobs:
         with:
           aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.DR_REGION }}
-          role-to-assume: ${{ env.PROD_PIPELINE_EXECUTION_ROLE }}
+          aws-region: ${{ env.SECONDARY_REGION }}
+          role-to-assume: ${{ env.SECONDARY_PIPELINE_EXECUTION_ROLE }}
           role-session-name: prod-dr-deployment
           role-duration-seconds: 3600
           role-skip-session-tagging: true
 
-      - name: Deploy to production account
+      - name: Deploy to production account disaster recovery
         run: |
-          sam deploy --stack-name ${DR_STACK_NAME} \
+          sam deploy --stack-name ${SECONDARY_STACK_NAME} \
             --template packaged-prod.yaml \
             --capabilities CAPABILITY_IAM \
-            --region ${DR_REGION} \
-            --s3-bucket ${DR_ARTIFACTS_BUCKET} \
+            --region ${SECONDARY_REGION} \
+            --s3-bucket ${SECONDARY_ARTIFACTS_BUCKET} \
             --no-fail-on-empty-changeset \
-            --role-arn ${PROD_CLOUDFORMATION_EXECUTION_ROLE} \
+            --role-arn ${SECONDARY_CLOUDFORMATION_EXECUTION_ROLE} \
             --parameter-overrides \
               CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
