@@ -1,0 +1,208 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: API Failover using Route 53, CloudWatch Alarm, and Lambda
+
+Parameters:
+  HostedZoneId:
+    Description: Hosted zone id
+    Type: String
+  HostedZoneName:
+    Description: Name of hosted zone (must have a . at the end)
+    Type: String
+  DRAPIDomainName:
+    Description: Domain name of api gateway in disaster recovery region
+    Type: String
+  DRHostedZoneId:
+    Description: Hosted zone id for disaster recovery region
+    Type: String
+  DRSUBDomainName:
+    Description: Sub domain name of disaster recovery region
+    Type: String
+  PRAPIDomainName:
+    Description: Domain name of api in primary region
+    Type: String
+  PRHostedZoneId:
+    Description: Hosted zone id for primary region
+    Type: String
+  PRSUBDomainName:
+    Description: Sub domain name of primary region
+    Type: String
+  PRInvokeAPIURL:
+    Description: Invoke url of primary api gateway
+    Type: String
+  AdminEmail:
+    Description: Email of admin
+    Type: String
+
+Resources:
+  Route53HealthCheck:   # Route 53 Health Check for Primary API
+    Type: AWS::Route53::HealthCheck
+    Properties:
+      HealthCheckConfig:
+        Type: HTTPS
+        ResourcePath: /Prod/health
+        FullyQualifiedDomainName: !Ref PRInvokeAPIURL
+        RequestInterval: 10
+        FailureThreshold: 2
+      HealthCheckTags:
+        - Key: Name
+          Value: Primary API Health Check
+
+  Route53FailoverRecordPrimary: # Route 53 Failover DNS Record for primary api gateway
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Ref HostedZoneName
+      Name: !Ref PRSUBDomainName
+      Type: A
+      SetIdentifier: Primary
+      HealthCheckId: !Ref Route53HealthCheck
+      Failover: PRIMARY
+      AliasTarget:
+        DNSName: !Ref PRAPIDomainName
+        HostedZoneId: !Ref PRHostedZoneId
+
+  Route53FailoverRecordSecondary: # Route 53 Failover DNS Record for backup api gateway
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Ref HostedZoneName
+      Name: !Ref DRSUBDomainName
+      Type: A
+      SetIdentifier: Secondary
+      Failover: SECONDARY
+      AliasTarget:
+        DNSName: !Ref DRAPIDomainName
+        HostedZoneId: !Ref DRHostedZoneId
+
+  PrimaryApiHealthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: PrimaryAPI-Unhealthy
+      MetricName: HealthCheckStatus
+      Namespace: AWS/Route53
+      Dimensions:
+        - Name: HealthCheckId
+          Value: !Ref Route53HealthCheck
+      Statistic: Minimum
+      ComparisonOperator: LessThanThreshold
+      Threshold: 1  # Triggers when the health check fails
+      Period: 60  # Evaluate every 60 seconds
+      EvaluationPeriods: 2  # Trigger if unhealthy for 2 minutes
+      AlarmActions:
+        - !GetAtt FailoverLambda.Arn  # Trigger failover Lambda
+
+  SNSFailoverTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-FailoverTopic
+      DisplayName: Failover Alerts
+
+  SNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      Endpoint: !Ref AdminEmail
+      TopicArn: !Ref SNSFailoverTopic
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref FailoverLambda
+      Principal: cloudwatch.amazonaws.com
+      SourceArn: !GetAtt PrimaryApiHealthAlarm.Arn
+
+  FailoverLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: FailoverToSecondary
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Role: !GetAtt FailoverLambdaRole.Arn
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref SNSFailoverTopic
+          HOSTED_ZONE_ID: !Ref HostedZoneId
+          HOSTED_ZONE_NAME: !Ref HostedZoneName
+          DR_HOSTED_ZONE_ID: !Ref DRHostedZoneId
+          DR_API_DOMAIN_NAME: !Ref DRAPIDomainName
+      Code:
+        ZipFile: |
+          import boto3
+          import os
+          
+          sns_client = boto3.client('sns')
+          route53_client = boto3.client('route53')
+          
+          def send_notification(subject, message):
+              sns_client.publish(
+                  TopicArn=os.getenv('SNS_TOPIC_ARN'),
+                  Subject=subject,
+                  Message=message
+              )
+          
+          def lambda_handler(event, context):
+              send_notification(
+                  "🚨 Primary API Down!",
+                  "The primary API Gateway is unhealthy. Initiating failover to DR region."
+              )
+          
+              response = route53_client.change_resource_record_sets(
+                  HostedZoneId=os.getenv("HOSTED_ZONE_ID"),  # Corrected reference
+                  ChangeBatch={
+                      "Changes": [
+                          {
+                              "Action": "UPSERT",
+                              "ResourceRecordSet": {
+                                  "Name": os.getenv("HOSTED_ZONE_NAME"),
+                                  "Type": "A",
+                                  "AliasTarget": {
+                                      "HostedZoneId": os.getenv("DR_HOSTED_ZONE_ID"),
+                                      "DNSName": os.getenv("DR_API_DOMAIN_NAME"),
+                                      "EvaluateTargetHealth": True
+                                  }
+                              }
+                          }
+                      ]
+                  }
+              )
+          
+              send_notification(
+                  "✅ Failover Successful",
+                  "Traffic has been rerouted to the secondary API Gateway."
+              )
+          
+              return {"statusCode": 200, "body": "Failover triggered successfully!"}
+            
+  FailoverLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CloudWatchLogsPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*"
+        - PolicyName: FailoverPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - route53:ChangeResourceRecordSets
+                Resource: !Sub arn:aws:route53:::hostedzone/${HostedZoneId}
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref SNSFailoverTopic
