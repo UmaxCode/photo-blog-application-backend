@@ -411,7 +411,7 @@ Resources:
                   - s3:ReplicateObject
                   - s3:ReplicateDelete
                   - s3:ReplicateTags
-                Resource: !Sub ${PrimaryBucket.Arn}/*
+                Resource: !Sub arn:aws:s3:::${AWS::StackName}-primary-bucket
               - Effect: Allow
                 Action:
                   - s3:ReplicateObject
