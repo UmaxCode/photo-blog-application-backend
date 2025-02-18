@@ -350,8 +350,28 @@ Resources:
 
   PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
     Type: AWS::S3::Bucket
+    Condition: IsPrimaryRegion
     Properties:
       BucketName: !Sub ${AWS::StackName}-primary-bucket
+      VersioningConfiguration:
+        Status: Enabled
+      ReplicationConfiguration:
+        Role: !GetAtt S3ReplicationRole.Arn
+        Rules:
+          - Status: Enabled
+            Priority: 1
+            DeleteMarkerReplication:
+              Status: Disabled
+            Filter: { } # Replicates all objects
+            Destination:
+              Bucket: !Sub arn:aws:s3:::${AWS::StackName}-secondary-primary-bucket
+              StorageClass: STANDARD
+
+  SecondaryPrimaryBucket:
+    Type: AWS::S3::Bucket
+    Condition: IsDRRegion
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-secondary-primary-bucket
       VersioningConfiguration:
         Status: Enabled
 
