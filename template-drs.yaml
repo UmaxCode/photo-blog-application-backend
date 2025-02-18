@@ -87,7 +87,7 @@ Resources:
       Period: 60  # Evaluate every 60 seconds
       EvaluationPeriods: 2  # Trigger if unhealthy for 2 minutes
       AlarmActions:
-        - !GetAtt FailoverLambda.Arn  # Trigger failover Lambda
+        - !Ref SNSFailoverTopic  # Send sns notification
 
   SNSFailoverTopic:
     Type: AWS::SNS::Topic
@@ -95,11 +95,18 @@ Resources:
       TopicName: !Sub ${AWS::StackName}-FailoverTopic
       DisplayName: Failover Alerts
 
-  SNSSubscription:
+  SNSEmailSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: email
       Endpoint: !Ref AdminEmail
+      TopicArn: !Ref SNSFailoverTopic
+
+  SNSLambdaSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: lambda
+      Endpoint: !GetAtt FailoverLambda.Arn
       TopicArn: !Ref SNSFailoverTopic
 
   LambdaInvokePermission:
@@ -107,8 +114,8 @@ Resources:
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref FailoverLambda
-      Principal: cloudwatch.amazonaws.com
-      SourceArn: !GetAtt PrimaryApiHealthAlarm.Arn
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref SNSFailoverTopic
 
   FailoverLambda:
     Type: AWS::Lambda::Function
@@ -129,47 +136,8 @@ Resources:
           import boto3
           import os
           
-          sns_client = boto3.client('sns')
-          route53_client = boto3.client('route53')
-          
-          def send_notification(subject, message):
-              sns_client.publish(
-                  TopicArn=os.getenv('SNS_TOPIC_ARN'),
-                  Subject=subject,
-                  Message=message
-              )
-          
           def lambda_handler(event, context):
-              send_notification(
-                  "🚨 Primary API Down!",
-                  "The primary API Gateway is unhealthy. Initiating failover to DR region."
-              )
-          
-              response = route53_client.change_resource_record_sets(
-                  HostedZoneId=os.getenv("HOSTED_ZONE_ID"),  # Corrected reference
-                  ChangeBatch={
-                      "Changes": [
-                          {
-                              "Action": "UPSERT",
-                              "ResourceRecordSet": {
-                                  "Name": os.getenv("HOSTED_ZONE_NAME"),
-                                  "Type": "A",
-                                  "AliasTarget": {
-                                      "HostedZoneId": os.getenv("DR_HOSTED_ZONE_ID"),
-                                      "DNSName": os.getenv("DR_API_DOMAIN_NAME"),
-                                      "EvaluateTargetHealth": True
-                                  }
-                              }
-                          }
-                      ]
-                  }
-              )
-          
-              send_notification(
-                  "✅ Failover Successful",
-                  "Traffic has been rerouted to the secondary API Gateway."
-              )
-          
+              print(event)
               return {"statusCode": 200, "body": "Failover triggered successfully!"}
             
   FailoverLambdaRole:
@@ -194,15 +162,3 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*"
-        - PolicyName: FailoverPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - route53:ChangeResourceRecordSets
-                Resource: !Sub arn:aws:route53:::hostedzone/${HostedZoneId}
-              - Effect: Allow
-                Action:
-                  - sns:Publish
-                Resource: !Ref SNSFailoverTopic

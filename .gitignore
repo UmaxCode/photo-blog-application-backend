@@ -8,3 +8,4 @@
 !.idea/vcs.xml
 
 .aws-sam
+*.toml
