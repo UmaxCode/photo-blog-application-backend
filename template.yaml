@@ -408,14 +408,11 @@ Resources:
                 Action:
                   - s3:GetObjectVersion
                   - s3:GetObjectVersionAcl
-                  - s3:ReplicateObject
-                  - s3:ReplicateDelete
-                  - s3:ReplicateTags
-                Resource: !Sub arn:aws:s3:::${AWS::StackName}-primary-bucket
+                Resource: !Sub arn:aws:s3:::${AWS::StackName}-primary-bucket/*
               - Effect: Allow
                 Action:
                   - s3:ReplicateObject
-                  - s3:ReplicateTags
+                  - s3:ReplicateDelete
                 Resource: arn:aws:s3:::photo-blog-secondary-secondary-primary-bucket
 
   SecondaryPrimaryBucket:
