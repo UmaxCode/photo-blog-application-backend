@@ -380,7 +380,7 @@ Resources:
               Status: Disabled
             Filter: { } # Replicates all objects
             Destination:
-              Bucket: !Sub arn:aws:s3:::${AWS::StackName}-secondary-primary-bucket
+              Bucket: arn:aws:s3:::photo-blog-secondary-secondary-primary-bucket
               StorageClass: STANDARD
 
   S3ReplicationRole:
@@ -416,7 +416,7 @@ Resources:
                 Action:
                   - s3:ReplicateObject
                   - s3:ReplicateTags
-                Resource: !Sub arn:aws:s3:::${AWS::StackName}-secondary-primary-bucket
+                Resource: arn:aws:s3:::photo-blog-secondary-secondary-primary-bucket
 
   SecondaryPrimaryBucket:
     Type: AWS::S3::Bucket
