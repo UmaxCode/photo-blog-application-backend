@@ -403,7 +403,7 @@ Resources:
                 Action:
                   - s3:GetReplicationConfiguration
                   - s3:ListBucket
-                Resource: !GetAtt PrimaryBucket.Arn
+                Resource: !Sub arn:aws:s3:::${AWS::StackName}-primary-bucket
               - Effect: Allow
                 Action:
                   - s3:GetObjectVersion
