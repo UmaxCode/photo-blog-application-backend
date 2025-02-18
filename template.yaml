@@ -66,13 +66,21 @@ Resources:
               - s3:GetObject
               - s3:DeleteObject
               - s3:PutObject
-            Resource: !Sub ${PrimaryBucket.Arn}/*
+            Resource:
+              Fn::If:
+                - IsPrimaryRegion
+                - !Sub ${PrimaryBucket.Arn}/*
+                - !Sub ${SecondaryPrimaryBucket.Arn}/*
       CodeUri: photo_lambda
       Environment:
         Variables:
           AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
           AWS_S3_STAGE_BUCKET_NAME: !Ref StagingBucket
-          AWS_S3_PRIMARY_BUCKET_NAME: !Ref PrimaryBucket
+          AWS_S3_PRIMARY_BUCKET_NAME:
+            Fn::If:
+              - IsPrimaryRegion
+              - !Ref PrimaryBucket
+              - !Ref SecondaryPrimaryBucket
           AWS_COGNITO_USER_POOL_ID: !Ref UserPool
       Events:
         ProxyResource:
@@ -287,7 +295,11 @@ Resources:
             Effect: Allow
             Action:
               - s3:PutObject
-            Resource: !Sub ${PrimaryBucket.Arn}/*
+            Resource:
+              Fn::If:
+                - IsPrimaryRegion
+                - !Sub ${PrimaryBucket.Arn}/*
+                - !Sub ${SecondaryPrimaryBucket.Arn}/*
         - Statement:
             Effect: Allow
             Action:
@@ -314,7 +326,11 @@ Resources:
       Environment:
         Variables:
           AWS_DYNAMODB_TABLE_NAME: !Ref DynamoTableName
-          AWS_S3_PRIMARY_BUCKET_NAME: !Ref PrimaryBucket
+          AWS_S3_PRIMARY_BUCKET_NAME:
+            Fn::If:
+              - IsPrimaryRegion
+              - !Ref PrimaryBucket
+              - !Ref SecondaryPrimaryBucket
           WEBSOCKET_CON_TABLE_NAME: !Ref WebSocketConnectionsTable
           API_GATEWAY_WEBSOCKET_ENDPOINT: !Join
             - ""
@@ -500,7 +516,11 @@ Outputs:
 
   PrimaryBucket:
     Description: "S3 bucket for holding processed upload images"
-    Value: !Ref PrimaryBucket
+    Value:
+      Fn::If:
+        - IsPrimaryRegion
+        - !Ref PrimaryBucket
+        - !Ref SecondaryPrimaryBucket
 
   WebSocketApiUrl:
     Description: "WebSocket API URL"
