@@ -378,7 +378,7 @@ Resources:
             Priority: 1
             DeleteMarkerReplication:
               Status: Disabled
-            Filter: { } # Replicates all objects
+            Prefix: ''
             Destination:
               Bucket: arn:aws:s3:::photo-blog-secondary-secondary-primary-bucket
               StorageClass: STANDARD
