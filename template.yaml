@@ -376,13 +376,10 @@ Resources:
         Role: !GetAtt S3ReplicationRole.Arn
         Rules:
           - Status: Enabled
-            DeleteMarkerReplication:
-              Status: Enabled
             Prefix: ""
             Id: Backup
             Destination:
               Bucket: arn:aws:s3:::photo-blog-secondary-secondary-primary-bucket
-              StorageClass: STANDARD
 
   S3ReplicationRole:
     Type: AWS::IAM::Role
