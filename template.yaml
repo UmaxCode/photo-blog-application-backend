@@ -382,13 +382,7 @@ Resources:
             Prefix: ""
             Id: Backup
             Destination:
-              Bucket: !Join
-                - ''
-                - - 'arn:aws:s3:::'
-                  - !Join
-                    - '-'
-                    - - !Ref DRRegion
-                      - photo-blog-secondary-secondary-primary-bucket
+              Bucket: arn:aws:s3:::photo-blog-secondary-secondary-primary-bucket
               StorageClass: STANDARD
 
   S3ReplicationRole:
@@ -421,15 +415,7 @@ Resources:
                 Action:
                   - s3:ReplicateObject
                   - s3:ReplicateDelete
-                Resource:
-                  - !Join
-                    - ''
-                    - - 'arn:aws:s3:::'
-                      - !Join
-                        - '-'
-                        - - !Ref DRRegion
-                          - photo-blog-secondary-secondary-primary-bucket
-                      - /*
+                Resource: arn:aws:s3:::photo-blog-secondary-secondary-primary-bucket/*
 
   SecondaryPrimaryBucket:
     Type: AWS::S3::Bucket
