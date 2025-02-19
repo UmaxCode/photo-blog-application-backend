@@ -366,6 +366,7 @@ Resources:
 
   PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
     Condition: IsPrimaryRegion
     Properties:
       BucketName: !Sub ${AWS::StackName}-primary-bucket
@@ -377,10 +378,17 @@ Resources:
           - Status: Enabled
             Priority: 1
             DeleteMarkerReplication:
-              Status: Disabled
-            Filter: { } # Replicates all objects
+              Status: Enabled
+            Prefix: ""
+            Id: Backup
             Destination:
-              Bucket: arn:aws:s3:::photo-blog-secondary-secondary-primary-bucket
+              Bucket: !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Join
+                    - '-'
+                    - - !Ref DRRegion
+                      - photo-blog-secondary-secondary-primary-bucket
               StorageClass: STANDARD
 
   S3ReplicationRole:
@@ -413,7 +421,15 @@ Resources:
                 Action:
                   - s3:ReplicateObject
                   - s3:ReplicateDelete
-                Resource: arn:aws:s3:::photo-blog-secondary-secondary-primary-bucket
+                Resource:
+                  - !Join
+                    - ''
+                    - - 'arn:aws:s3:::'
+                      - !Join
+                        - '-'
+                        - - !Ref DRRegion
+                          - photo-blog-secondary-secondary-primary-bucket
+                      - /*
 
   SecondaryPrimaryBucket:
     Type: AWS::S3::Bucket
