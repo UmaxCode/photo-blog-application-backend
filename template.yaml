@@ -376,7 +376,6 @@ Resources:
         Role: !GetAtt S3ReplicationRole.Arn
         Rules:
           - Status: Enabled
-            Priority: 1
             DeleteMarkerReplication:
               Status: Enabled
             Prefix: ""
