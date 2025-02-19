@@ -151,7 +151,10 @@ jobs:
               CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
-              DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }}
+              DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }} \
+              ShouldCreateSharedResource=true
+
+      # After deleting the primary stacke to test failover, change the ShouldCreateSharedResource to false to reuse retained resources.
 
   deploy-secondary:
     if: github.ref == 'refs/heads/main'
@@ -193,4 +196,5 @@ jobs:
               CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
-              DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }}
+              DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }} \
+              ShouldCreateSharedResource=false

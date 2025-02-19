@@ -40,10 +40,17 @@ Parameters:
     Description: Cognito callback url
     Type: String
     Default: https://spring.io/guides/gs/securing-web
+  ShouldCreateSharedResource:
+    Description: Decision to create global dynamoDB table or s3 replication bucket
+    Type: String
+    AllowedValues:
+      - true
+      - false
 
 Conditions:
   IsPrimaryRegion: !Equals [ !Ref AWS::Region, !Ref PrimaryRegion ]
   IsDRRegion: !Equals [ !Ref AWS::Region, !Ref DRRegion ]
+  shouldCreateSharedResource: !Equals [ !Ref ShouldCreateSharedResource, true ]
 
 Resources:
   PhotoBlogApplicationFunction: # Lambda function for api gateway
@@ -184,12 +191,12 @@ Resources:
       Policies:
         - AWSLambdaBasicExecutionRole
         - Statement:
-              - Effect: Allow
-                Action:
-                  - sns:Subscribe
-                  - sns:SetSubscriptionAttributes
-                  - sns:publish
-                Resource: !Ref SNSNotificationTopic
+            - Effect: Allow
+              Action:
+                - sns:Subscribe
+                - sns:SetSubscriptionAttributes
+                - sns:publish
+              Resource: !Ref SNSNotificationTopic
       CodeUri: cognito_lambda
       Environment:
         Variables:
@@ -205,7 +212,8 @@ Resources:
 
   PicturesGlobalTable: # DynamoDB Global Table for image info
     Type: AWS::DynamoDB::GlobalTable
-    Condition: IsPrimaryRegion
+    DeletionPolicy: Retain
+    Condition: shouldCreateSharedResource
     Properties:
       TableName: !Sub ${AWS::StackName}-${DynamoTableName}
       BillingMode: PAY_PER_REQUEST
