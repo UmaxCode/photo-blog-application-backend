@@ -140,6 +140,12 @@ jobs:
 
       - name: Deploy to primary region
         run: |
+          if aws dynamodb describe-table --table-name "picturesInfo" --region "$PRIMARY_REGION" >/dev/null 2>&1; then
+            SHOULD_CREATE_SHARED_RESOURCE=false
+          else
+            SHOULD_CREATE_SHARED_RESOURCE=true
+          fi
+
           sam deploy --stack-name ${PRIMARY_STACK_NAME} \
             --template packaged-primary.yaml \
             --capabilities CAPABILITY_IAM \
@@ -151,7 +157,10 @@ jobs:
               CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
-              DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }}
+              DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }} \
+              ShouldCreateSharedResource=$SHOULD_CREATE_SHARED_RESOURCE
+
+      # After deleting the primary stacke to test failover, change the ShouldCreateSharedResource to false to reuse retained resources.
 
   deploy-secondary:
     if: github.ref == 'refs/heads/main'
@@ -193,4 +202,5 @@ jobs:
               CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
-              DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }}
+              DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }} \
+              ShouldCreateSharedResource=false
