@@ -375,7 +375,7 @@ Resources:
   PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
-    Condition: IsPrimaryRegion
+    Condition: shouldCreateSharedResource
     Properties:
       BucketName: !Sub ${AWS::StackName}-primary-bucket
       VersioningConfiguration:
