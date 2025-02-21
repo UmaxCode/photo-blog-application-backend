@@ -205,5 +205,5 @@ jobs:
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
               DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }} \
-              ShouldCreateSharedResource=$SHOULD_CREATE_SHARED_RESOURCE
+              ShouldCreateSharedResource=$SHOULD_CREATE_SHARED_RESOURCE \
               SecondaryCognitoUserPoolId=$SECONDARY_USERPOOLID
