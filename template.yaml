@@ -195,6 +195,48 @@ Resources:
       Policies:
         - AWSLambdaBasicExecutionRole
         - Statement:
+            Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource:
+              - !GetAtt CognitoQueue.Arn
+      CodeUri: cognito_lambda
+      Environment:
+        Variables:
+          SNS_NOTIFICATION_TOPIC_ARN: !Ref SNSNotificationTopic
+          SECONDARY_USER_POOL_ID: !Ref SecondaryCognitoUserPoolId
+          QUEUE_URL: !Ref CognitoQueue
+      Events:
+        CognitoEvents:
+          Type: Cognito
+          Properties:
+            UserPool: !Ref UserPool
+            Trigger:
+              - PostConfirmation
+              - PostAuthentication
+
+  CognitoQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-cognito-queue
+
+  SQSPostConfAuthLambdaHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-SQSCognitoLambda
+      Handler: org.umaxcode.SQSPostConfAuthLambdaHandler::handleRequest
+      CodeUri: cognito_lambda
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+            Resource:
+              - !GetAtt CognitoQueue.Arn
+        - Statement:
             - Effect: Allow
               Action:
                 - sns:Subscribe
@@ -206,20 +248,15 @@ Resources:
               Action:
                 - cognito-idp:AdminCreateUser
               Resource: !Sub arn:aws:cognito-idp:${DRRegion}:${AWS::AccountId}:userpool/${SecondaryCognitoUserPoolId}
-      CodeUri: cognito_lambda
       Environment:
         Variables:
-          SNS_NOTIFICATION_TOPIC_ARN: !Ref SNSNotificationTopic
-          SECONDARY_USER_POOL_ID: !Ref SecondaryCognitoUserPoolId
           SECONDARY_REGION: !Ref DRRegion
       Events:
-        CognitoEvents:
-          Type: Cognito
+        SQSTrigger:
+          Type: SQS
           Properties:
-            UserPool: !Ref UserPool
-            Trigger:
-              - PostConfirmation
-              - PostAuthentication
+            Queue: !GetAtt CognitoQueue.Arn
+            BatchSize: 5
 
   PicturesGlobalTable: # DynamoDB Global Table for image info
     Type: AWS::DynamoDB::GlobalTable
