@@ -127,7 +127,7 @@ public class SQSPostConfAuthLambdaHandler implements RequestHandler<SQSEvent, Vo
 
             AdminCreateUserRequest createUserRequest = AdminCreateUserRequest.builder()
                     .userPoolId(secondaryUserPoolId)
-                    .username(username)
+                    .username(email)
                     .userAttributes(userAttributes)
                     .messageAction("SUPPRESS")
                     .build();
