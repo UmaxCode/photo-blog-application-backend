@@ -111,57 +111,6 @@ jobs:
           name: packaged-secondary.yaml
           path: packaged-secondary.yaml
 
-  deploy-primary:
-    if: github.ref == 'refs/heads/main'
-    needs: [build-and-package-for-primary, deploy-secondary]
-    runs-on: ubuntu-latest
-    # Configure GitHub Action Environment to have a manual approval step before deployment to production
-    # https://docs.github.com/en/actions/reference/environments
-    # environment: <configured-environment>
-    steps:
-      - uses: actions/checkout@v3
-      - uses: aws-actions/setup-sam@v2
-        with:
-          use-installer: true
-      - uses: actions/download-artifact@v4
-        with:
-          name: packaged-primary.yaml
-
-      - name: Assume the primary pipeline user role
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.PRIMARY_REGION }}
-          role-to-assume: ${{ env.PRIMARY_PIPELINE_EXECUTION_ROLE }}
-          role-session-name: primary-deployment
-          role-duration-seconds: 3600
-          role-skip-session-tagging: true
-
-      - name: Deploy to primary region
-        run: |
-          if aws dynamodb describe-table --table-name "picturesInfo" --region "$PRIMARY_REGION" >/dev/null 2>&1; then
-            SHOULD_CREATE_SHARED_RESOURCE=false
-          else
-            SHOULD_CREATE_SHARED_RESOURCE=true
-          fi
-
-          sam deploy --stack-name ${PRIMARY_STACK_NAME} \
-            --template packaged-primary.yaml \
-            --capabilities CAPABILITY_IAM \
-            --region ${PRIMARY_REGION} \
-            --s3-bucket ${PRIMARY_ARTIFACTS_BUCKET} \
-            --no-fail-on-empty-changeset \
-            --role-arn ${PRIMARY_CLOUDFORMATION_EXECUTION_ROLE} \
-            --parameter-overrides \
-              CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
-              CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
-              PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
-              DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }} \
-              ShouldCreateSharedResource=$SHOULD_CREATE_SHARED_RESOURCE
-
-      # After deleting the primary stacke to test failover, change the ShouldCreateSharedResource to false to reuse retained resources.
-
   deploy-secondary:
     if: github.ref == 'refs/heads/main'
     needs: [build-and-package-for-secondary]
@@ -204,3 +153,57 @@ jobs:
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
               DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }} \
               ShouldCreateSharedResource=false
+
+  deploy-primary:
+    if: github.ref == 'refs/heads/main'
+    needs: [build-and-package-for-primary, deploy-secondary]
+    runs-on: ubuntu-latest
+    # Configure GitHub Action Environment to have a manual approval step before deployment to production
+    # https://docs.github.com/en/actions/reference/environments
+    # environment: <configured-environment>
+    steps:
+      - uses: actions/checkout@v3
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: packaged-primary.yaml
+
+      - name: Assume the primary pipeline user role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.PRIMARY_REGION }}
+          role-to-assume: ${{ env.PRIMARY_PIPELINE_EXECUTION_ROLE }}
+          role-session-name: primary-deployment
+          role-duration-seconds: 3600
+          role-skip-session-tagging: true
+
+      - name: Deploy to primary region
+        run: |
+          if aws dynamodb describe-table --table-name "picturesInfo" --region "$PRIMARY_REGION" >/dev/null 2>&1; then
+            SHOULD_CREATE_SHARED_RESOURCE=false
+          else
+            SHOULD_CREATE_SHARED_RESOURCE=true
+          fi
+
+          SECONDARY_USERPOOLID=$(aws cloudformation describe-stacks --stack-name ${SECONDARY_STACK_NAME} \
+           --region ${SECONDARY_REGION} --query "Stacks[0].Outputs[?OutputKey=='UserPool'].OutputValue | [0]" --output text
+            )
+
+          sam deploy --stack-name ${PRIMARY_STACK_NAME} \
+            --template packaged-primary.yaml \
+            --capabilities CAPABILITY_IAM \
+            --region ${PRIMARY_REGION} \
+            --s3-bucket ${PRIMARY_ARTIFACTS_BUCKET} \
+            --no-fail-on-empty-changeset \
+            --role-arn ${PRIMARY_CLOUDFORMATION_EXECUTION_ROLE} \
+            --parameter-overrides \
+              CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
+              CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
+              PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
+              DRACMCertificateArn=${{ secrets.DR_ACM_CERTIFICATE_ARN }} \
+              ShouldCreateSharedResource=$SHOULD_CREATE_SHARED_RESOURCE
+              SecondaryCognitoUserPoolId=$SECONDARY_USERPOOLID
