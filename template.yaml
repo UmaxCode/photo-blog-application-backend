@@ -46,6 +46,10 @@ Parameters:
     AllowedValues:
       - true
       - false
+  SecondaryCognitoUserPoolId:
+    Description: Cognito user pool id of secondary stack
+    Type: String
+    Default: ""
 
 Conditions:
   IsPrimaryRegion: !Equals [ !Ref AWS::Region, !Ref PrimaryRegion ]
@@ -197,10 +201,17 @@ Resources:
                 - sns:SetSubscriptionAttributes
                 - sns:publish
               Resource: !Ref SNSNotificationTopic
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminCreateUser
+              Resource: !Sub arn:aws:cognito-idp:${DRRegion}:${AWS::AccountId}:userpool/${SecondaryCognitoUserPoolId}
       CodeUri: cognito_lambda
       Environment:
         Variables:
           SNS_NOTIFICATION_TOPIC_ARN: !Ref SNSNotificationTopic
+          SECONDARY_USER_POOL_ID: !Ref SecondaryCognitoUserPoolId
+          SECONDARY_REGION: !Ref DRRegion
       Events:
         CognitoEvents:
           Type: Cognito
@@ -375,7 +386,7 @@ Resources:
   PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
-    Condition: IsPrimaryRegion
+    Condition: shouldCreateSharedResource
     Properties:
       BucketName: !Sub ${AWS::StackName}-primary-bucket
       VersioningConfiguration:
