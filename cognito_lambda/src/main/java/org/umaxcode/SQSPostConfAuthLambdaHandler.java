@@ -33,6 +33,8 @@ public class SQSPostConfAuthLambdaHandler implements RequestHandler<SQSEvent, Vo
 
         for (SQSEvent.SQSMessage message : event.getRecords()) {
             // Process each message
+
+            System.out.println("Message" + message);
             String triggerSource = message.getMessageAttributes().get("triggerSource").getStringValue();
             String email = message.getMessageAttributes().get("email").getStringValue();
             String topicArn = message.getMessageAttributes().get("topicArn").getStringValue();
@@ -41,7 +43,7 @@ public class SQSPostConfAuthLambdaHandler implements RequestHandler<SQSEvent, Vo
                 case "PostConfirmation_ConfirmSignUp":
                     String lastName = message.getMessageAttributes().get("lastname").getStringValue();
                     String username = message.getMessageAttributes().get("username").getStringValue();
-                    String secondaryUserPoolId = message.getMessageAttributes().get("secondaryUserPoolId").getStringValue();
+                    String secondaryUserPoolId = message.getMessageAttributes().get("secondaryCognitoPoolId").getStringValue();
                     handlePostConfirmation(email, username, firstName,
                             lastName, secondaryUserPoolId, topicArn);
                     break;
