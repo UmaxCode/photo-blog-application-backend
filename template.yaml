@@ -247,6 +247,7 @@ Resources:
             - Effect: Allow
               Action:
                 - cognito-idp:AdminCreateUser
+                - cognito-idp:AdminSetUserPassword
               Resource: !Sub arn:aws:cognito-idp:${DRRegion}:${AWS::AccountId}:userpool/${SecondaryCognitoUserPoolId}
       Environment:
         Variables:
