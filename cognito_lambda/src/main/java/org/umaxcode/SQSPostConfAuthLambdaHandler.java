@@ -3,9 +3,11 @@ package org.umaxcode;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import org.umaxcode.utils.PasswordGenerator;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminSetUserPasswordRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.*;
@@ -133,6 +135,17 @@ public class SQSPostConfAuthLambdaHandler implements RequestHandler<SQSEvent, Vo
                     .build();
 
             cognitoIdentityProviderClient.adminCreateUser(createUserRequest);
+
+            // Set a permanent password to avoid FORCE_CHANGE_PASSWORD status
+            AdminSetUserPasswordRequest setPasswordRequest = AdminSetUserPasswordRequest.builder()
+                    .userPoolId(secondaryUserPoolId)
+                    .username(email)
+                    .password(PasswordGenerator.generatePassword())
+                    .permanent(true)  // This makes the password permanent to allow sending password reset after failover
+                    .build();
+
+            cognitoIdentityProviderClient.adminSetUserPassword(setPasswordRequest);
+
         } catch (Exception ex) {
             System.out.println("Error replicating user detail: " + ex.getMessage());
         }
