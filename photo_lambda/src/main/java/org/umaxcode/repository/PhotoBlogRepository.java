@@ -18,5 +18,5 @@ public interface PhotoBlogRepository {
 
     Map<String, AttributeValue> restoreFromRecycleBin(String id);
 
-    List<Map<String, String>> getAllItemsInRecycleBin(String email, String sub);
+    List<Map<String, String>> getAllItemsInRecycleBin(String email);
 }
