@@ -264,7 +264,7 @@ Resources:
     DeletionPolicy: Retain
     Condition: shouldCreateSharedResource
     Properties:
-      TableName: !Sub ${AWS::StackName}-${DynamoTableName}
+      TableName: !Ref DynamoTableName
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: picId
