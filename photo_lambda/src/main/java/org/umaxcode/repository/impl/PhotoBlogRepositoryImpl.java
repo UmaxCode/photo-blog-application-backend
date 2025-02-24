@@ -189,7 +189,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
         return items.stream()
                 .map(photo -> Map.of(
                         "picId", photo.get("picId").s(),
-                        "objectKey", RECYCLE_BIN_PATH + email + "/" + extractObjectKey(photo.get("picUrl").s())))
+                        "objectKey", RECYCLE_BIN_PATH +"/" + email + "/" + extractObjectKey(photo.get("picUrl").s())))
                 .toList();
     }
 }
