@@ -113,7 +113,7 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
         String email = jwt.getClaimAsString("email");
         List<Map<String, String>> recycledItemsDetails = photoBlogRepository.getAllItemsInRecycleBin(email);
         if (recycledItemsDetails.isEmpty()) {
-            return List.of(GetPhotoDto.builder().imgId("id").build());
+            return List.of();
         }
 
         return s3Service.getObjects(recycledItemsDetails);
