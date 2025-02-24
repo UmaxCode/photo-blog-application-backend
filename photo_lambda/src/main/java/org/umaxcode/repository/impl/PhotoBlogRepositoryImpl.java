@@ -170,7 +170,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
     }
 
     @Override
-    public List<Map<String, String>> getAllItemsInRecycleBin(String email, String sub) {
+    public List<Map<String, String>> getAllItemsInRecycleBin(String email) {
 
         ScanRequest scanRequest = ScanRequest.builder()
                 .tableName(tableName)
@@ -189,7 +189,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
         return items.stream()
                 .map(photo -> Map.of(
                         "picId", photo.get("picId").s(),
-                        "objectKey", RECYCLE_BIN_PATH + sub + "/" + extractObjectKey(photo.get("picUrl").s())))
+                        "objectKey", RECYCLE_BIN_PATH + email + "/" + extractObjectKey(photo.get("picUrl").s())))
                 .toList();
     }
 }

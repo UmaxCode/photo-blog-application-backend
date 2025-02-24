@@ -74,11 +74,11 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
 
     @Override
     public void deleteImage(String id, Jwt jwt) {
-
+        String email = jwt.getClaimAsString("email");
         Map<String, AttributeValue> deleteResponse = photoBlogRepository.deleteItem(id);
         if (!deleteResponse.isEmpty()) {
             String objectURL = deleteResponse.get("picUrl").s();
-            s3Service.deleteObject(RECYCLE_BIN_PATH + extractObjectKey(objectURL));
+            s3Service.deleteObject(RECYCLE_BIN_PATH + email + "/" + extractObjectKey(objectURL));
             return;
         }
 
@@ -87,10 +87,10 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
 
     @Override
     public GetPhotoDto moveToRecycleBin(String id, Jwt jwt) {
-        String sub = jwt.getClaimAsString("sub");
+        String email = jwt.getClaimAsString("email");
         Map<String, AttributeValue> returnedAttribute = photoBlogRepository.addItemToRecycleBin(id);
         String objectKey = extractObjectKey(returnedAttribute.get("picUrl").s());
-        s3Service.moveObject(objectKey, RECYCLE_BIN_PATH + sub + "/" + objectKey);
+        s3Service.moveObject(objectKey, RECYCLE_BIN_PATH + email + "/" + objectKey);
         return GetPhotoDto.builder()
                 .imgId(returnedAttribute.get("picId").s())
                 .build();
@@ -98,10 +98,10 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
 
     @Override
     public GetPhotoDto restoreFromRecycleBin(String id, Jwt jwt) {
-        String sub = jwt.getClaimAsString("sub");
+        String email = jwt.getClaimAsString("email");
         Map<String, AttributeValue> returnedAttribute = photoBlogRepository.restoreFromRecycleBin(id);
         String objectKey = extractObjectKey(returnedAttribute.get("picUrl").s());
-        s3Service.moveObject(RECYCLE_BIN_PATH + sub + "/"
+        s3Service.moveObject(RECYCLE_BIN_PATH + email + "/"
                 + objectKey, objectKey);
         return GetPhotoDto.builder()
                 .imgId(returnedAttribute.get("picId").s())
@@ -111,8 +111,7 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     @Override
     public List<GetPhotoDto> retrieveAllImagesInRecyclingBin(Jwt jwt) {
         String email = jwt.getClaimAsString("email");
-        String sub = jwt.getClaimAsString("sub");
-        List<Map<String, String>> recycledItemsDetails = photoBlogRepository.getAllItemsInRecycleBin(email, sub);
+        List<Map<String, String>> recycledItemsDetails = photoBlogRepository.getAllItemsInRecycleBin(email);
         if (recycledItemsDetails.isEmpty()) {
             return List.of();
         }

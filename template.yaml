@@ -264,7 +264,7 @@ Resources:
     DeletionPolicy: Retain
     Condition: shouldCreateSharedResource
     Properties:
-      TableName: !Sub ${AWS::StackName}-${DynamoTableName}
+      TableName: !Ref DynamoTableName
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: picId
@@ -400,6 +400,8 @@ Resources:
 
   SNSNotificationTopic: # SNS for receiving notifications
     Type: AWS::SNS::Topic
+    DeletionPolicy: Retain
+    Condition: shouldCreateSharedResource
     Properties:
       TopicName: !Sub ${AWS::StackName}-SnsNotificationTopic
       DisplayName: SNS notification topic for receiving notifications
