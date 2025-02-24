@@ -401,7 +401,6 @@ Resources:
   SNSNotificationTopic: # SNS for receiving notifications
     Type: AWS::SNS::Topic
     DeletionPolicy: Retain
-    Condition: shouldCreateSharedResource
     Properties:
       TopicName: !Sub ${AWS::StackName}-SnsNotificationTopic
       DisplayName: SNS notification topic for receiving notifications
@@ -426,7 +425,6 @@ Resources:
   PrimaryBucket: # Primary S3 Bucket (for storing processed images with watermarks)
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
-    Condition: shouldCreateSharedResource
     Properties:
       BucketName: !Sub ${AWS::StackName}-primary-bucket
       VersioningConfiguration:
