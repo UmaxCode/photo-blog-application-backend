@@ -102,7 +102,10 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
             DeleteItemRequest deleteRequest = DeleteItemRequest.builder()
                     .tableName(tableName)
                     .key(key)
-                    .conditionExpression("isPlacedInRecycleBin = 1")
+                    .conditionExpression("isPlacedInRecycleBin = :true")
+                    .expressionAttributeValues(Map.of(
+                            ":true", AttributeValue.builder().n("1").build()
+                    ))
                     .returnValues("ALL_OLD")
                     .build();
 
