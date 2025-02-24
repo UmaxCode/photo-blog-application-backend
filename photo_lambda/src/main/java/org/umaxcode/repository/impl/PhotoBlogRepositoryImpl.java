@@ -174,7 +174,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
 
         ScanRequest scanRequest = ScanRequest.builder()
                 .tableName(tableName)
-                .filterExpression("#owner <> :email AND isPlacedInRecycleBin = :true")
+                .filterExpression("#owner = :email AND isPlacedInRecycleBin = :true")
                 .expressionAttributeValues(Map.of(
                         ":email", AttributeValue.builder().s(email).build(),
                         ":true", AttributeValue.builder().n("1").build()
