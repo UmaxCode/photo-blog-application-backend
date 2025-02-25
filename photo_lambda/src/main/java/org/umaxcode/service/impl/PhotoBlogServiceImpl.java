@@ -29,6 +29,12 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     @Override
     public String upload(MultipartFile pic, Jwt jwt) {
 
+        List<String> allowedMimeTypes = List.of("image/jpeg", "image/png", "image/gif");
+
+        if (pic.isEmpty() || !allowedMimeTypes.contains(pic.getContentType())) {
+            throw new PhotoBlogException("Invalid file type. Only JPEG, PNG, and GIF are allowed.");
+        }
+
         String firstName = jwt.getClaimAsString("given_name");
         String lastName = jwt.getClaimAsString("family_name");
         String email = jwt.getClaimAsString("email");
