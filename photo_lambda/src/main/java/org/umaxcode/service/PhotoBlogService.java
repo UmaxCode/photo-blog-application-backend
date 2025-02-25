@@ -11,7 +11,7 @@ public interface PhotoBlogService {
 
     String upload(MultipartFile pic, Jwt jwt);
 
-    PhotoUploadDTo generatePreSignedUrl(String id);
+    PhotoUploadDTo generatePreSignedUrl(String id, Jwt jwt);
 
     List<GetPhotoDto> getImages(String ownership, Jwt jwt);
 

@@ -33,9 +33,9 @@ public class PhotoBlogController {
 
     @GetMapping("/{id}/generate-pre-signed-url")
     @ResponseStatus(HttpStatus.OK)
-    public SuccessResponse generatePreSignedUrl(@PathVariable String id) {
+    public SuccessResponse generatePreSignedUrl(@PathVariable String id, @AuthenticationPrincipal Jwt jwt) {
 
-        PhotoUploadDTo generatedUrl = photoBlogService.generatePreSignedUrl(id);
+        PhotoUploadDTo generatedUrl = photoBlogService.generatePreSignedUrl(id, jwt);
 
         return SuccessResponse.builder()
                 .message("Pre-signed url generated successfully")
