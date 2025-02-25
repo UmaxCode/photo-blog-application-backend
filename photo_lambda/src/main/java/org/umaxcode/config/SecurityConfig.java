@@ -40,7 +40,7 @@ public class SecurityConfig {
         cors.addAllowedHeader("*");
         cors.addAllowedMethod("*");
         cors.setAllowCredentials(true);
-        cors.setAllowedOrigins(List.of("http://localhost:3000"));
+        cors.setAllowedOrigins(List.of("http://localhost:3000", "https://main.d506j3um5uc41.amplifyapp.com"));
         source.registerCorsConfiguration("/**", cors);
 
         return source;
