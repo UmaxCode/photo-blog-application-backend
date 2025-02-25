@@ -45,14 +45,19 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     }
 
     @Override
-    public PhotoUploadDTo generatePreSignedUrl(String id) {
+    public PhotoUploadDTo generatePreSignedUrl(String id, Jwt jwt) {
 
+        String email = jwt.getClaimAsString("email");
         Map<String, AttributeValue> item = photoBlogRepository.getItem(id);
         System.out.println("Results: " + item.size() + "values " + item);
         if (!item.isEmpty()) {
 
             if (item.get("isPlacedInRecycleBin").n().equals("1")) {
                 throw new PhotoBlogException("This image cannot be shared");
+            }
+
+            if (!item.get("owner").s().equalsIgnoreCase(email)) {
+                throw new PhotoBlogException("Unauthorized operation on this image");
             }
 
             String objectURL = item.get("picUrl").s();
