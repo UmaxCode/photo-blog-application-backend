@@ -74,9 +74,17 @@ Resources:
         - Statement:
             Effect: Allow
             Action:
+              - s3:ListBucket
+            Resource:
+              Fn::If:
+                - IsPrimaryRegion
+                - !GetAtt PrimaryBucket.Arn
+                - !GetAtt SecondaryPrimaryBucket.Arn
+        - Statement:
+            Effect: Allow
+            Action:
               - s3:GetObject
               - s3:DeleteObject
-              - s3:ListBucket
               - s3:PutObject
             Resource:
               Fn::If:
