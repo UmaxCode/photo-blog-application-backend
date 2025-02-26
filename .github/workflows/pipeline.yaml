@@ -148,7 +148,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --role-arn ${SECONDARY_CLOUDFORMATION_EXECUTION_ROLE} \
             --parameter-overrides \
-              CognitoCallbackURL=https://main.d506j3um5uc41.amplifyapp.com/auth/callback
+              CognitoCallbackURL=https://main.d506j3um5uc41.amplifyapp.com/auth/callback \
               CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
@@ -202,7 +202,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --role-arn ${PRIMARY_CLOUDFORMATION_EXECUTION_ROLE} \
             --parameter-overrides \
-              CognitoCallbackURL=https://main.d506j3um5uc41.amplifyapp.com/auth/callback
+              CognitoCallbackURL=https://main.d506j3um5uc41.amplifyapp.com/auth/callback \
               CustomDomainNamePrimary=${{secrets.CUSTOM_DOMAINNAME_PRIMARY}} \
               CustomDomainNameDR=${{ secrets.CUSTOM_DOMAINNAME_DR }} \
               PrimaryACMCertificateArn=${{ secrets.PRIMARY_ACM_CERTIFICATE_ARN }} \
