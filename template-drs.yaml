@@ -1,5 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: API Failover using Route 53, CloudWatch Alarm, and Lambda
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Runtime: python3.9
+    MemorySize: 512
+    Timeout: 30
 
 Parameters:
   HostedZoneId:
@@ -32,6 +39,39 @@ Parameters:
   AdminEmail:
     Description: Email of admin
     Type: String
+  SecondaryUserPoolId:
+    Description: User pool id of secondary stack
+    Type: String
+  DRRegion:
+    Description: Disaster recovery region
+    Type: String
+    Default: eu-west-1
+  PrimaryRegion:
+    Description: Disaster recovery region
+    Type: String
+    Default: eu-central-1
+  SNSNotificationTopicSecondary:
+    Description: SNS notification topic arn in secondary region
+    Type: String
+  SNSNotificationTopicPrimary:
+    Description: SNS notification topic arn in primary region
+    Type: String
+  DRCognitoAuthEndpoint:
+    Description: authentication endpoint of cognito in secondary region
+    Type: String
+  DRCallBackUrlEndpoint:
+    Description: callback url for cognito in secondary region
+    Type: String
+  DRClientId:
+    Description: cognito client id in secondary region
+    Type: String
+  DRClientSecret:
+    Description: cognito client secret in secondary region
+    Type: String
+  DRWebsocketEndpoint:
+    Description: api websocket endpoint in secondary region
+    Type: String
+
 
 Resources:
   Route53HealthCheck:   # Route 53 Health Check for Primary API
@@ -84,7 +124,7 @@ Resources:
       Statistic: Minimum
       ComparisonOperator: LessThanThreshold
       Threshold: 1  # Triggers when the health check fails
-      Period: 60  # Evaluate every 60 seconds
+      Period: 30  # Evaluate every 30 seconds
       EvaluationPeriods: 2  # Trigger if unhealthy for 2 minutes
       AlarmActions:
         - !Ref SNSFailoverTopic  # Send sns notification
@@ -118,28 +158,29 @@ Resources:
       SourceArn: !Ref SNSFailoverTopic
 
   FailoverLambda:
-    Type: AWS::Lambda::Function
+    Type: AWS::Serverless::Function
     Properties:
       FunctionName: FailoverToSecondary
-      Runtime: python3.9
-      Handler: index.lambda_handler
+      CodeUri: failover
+      Handler: failoverLambdaHandler.lambda_handler
       Role: !GetAtt FailoverLambdaRole.Arn
       Environment:
         Variables:
-          SNS_TOPIC_ARN: !Ref SNSFailoverTopic
           HOSTED_ZONE_ID: !Ref HostedZoneId
           HOSTED_ZONE_NAME: !Ref HostedZoneName
           DR_HOSTED_ZONE_ID: !Ref DRHostedZoneId
           DR_API_DOMAIN_NAME: !Ref DRAPIDomainName
-      Code:
-        ZipFile: |
-          import boto3
-          import os
-          
-          def lambda_handler(event, context):
-              print(event)
-              return {"statusCode": 200, "body": "Failover triggered successfully!"}
-            
+          SecondaryUserPoolId: !Ref SecondaryUserPoolId
+          DRRegion: !Ref DRRegion
+          PrimaryRegion: !Ref PrimaryRegion
+          SNSNotificationTopicSecondary: !Ref SNSNotificationTopicSecondary
+          SNSNotificationTopicPrimary: !Ref SNSNotificationTopicPrimary
+          DRCognitoAuthEndpoint: !Ref DRCognitoAuthEndpoint
+          DRCallBackUrlEndpoint: !Ref DRCallBackUrlEndpoint
+          DRClientId: !Ref DRClientId
+          DRClientSecret: !Ref DRClientSecret
+          DRWebsocketEndpoint: !Ref DRWebsocketEndpoint
+
   FailoverLambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -161,4 +202,31 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource:
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*"
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*
+        - PolicyName: CognitoPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:ListUsers
+                Resource: !Sub arn:aws:cognito-idp:${DRRegion}:${AWS::AccountId}:userpool/${SecondaryUserPoolId}
+        - PolicyName: SNSPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:*
+                Resource:
+                  - !Ref SNSNotificationTopicSecondary
+                  - !Ref SNSNotificationTopicPrimary
+        - PolicyName: SSMPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:PutParameter
+                Resource:
+                  - !Sub arn:aws:cognito-idp:${PrimaryRegion}:${AWS::AccountId}:parameter/photoblog/*
