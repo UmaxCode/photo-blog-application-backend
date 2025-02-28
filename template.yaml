@@ -36,6 +36,10 @@ Parameters:
     Description: Disaster recovery region for failover
     Type: String
     Default: eu-west-1
+  LogoutURL:
+    Description: Cognito logout url
+    Type: String
+    Default: https://spring.io
   CognitoCallbackURL:
     Description: Cognito callback url
     Type: String
@@ -179,6 +183,8 @@ Resources:
         - ALLOW_USER_PASSWORD_AUTH
         - ALLOW_USER_SRP_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
+      LogoutURLs:
+        - !Ref LogoutURL
       CallbackURLs:
         - !Ref CognitoCallbackURL
       UserPoolId: !Ref UserPool
