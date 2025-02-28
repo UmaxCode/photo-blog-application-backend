@@ -1,82 +1,59 @@
-# photo-blog-application serverless API
-The photo-blog-application project, created with [`aws-serverless-java-container`](https://github.com/aws/serverless-java-container).
+# Photo Blog App
 
-The starter project defines a simple `/ping` resource that can accept `GET` requests with its tests.
+## Project Overview
 
-The project folder also includes a `template.yml` file. You can use this [SAM](https://github.com/awslabs/serverless-application-model) file to deploy the project to AWS Lambda and Amazon API Gateway or test in local with the [SAM CLI](https://github.com/awslabs/aws-sam-cli). 
+The **Photo Blog App** is a serverless web application that allows users to create and manage their personal photo blogs. Users can upload, view, and delete their blog posts and images, with authentication and email notifications integrated into the system.
 
-## Pre-requisites
-* [AWS CLI](https://aws.amazon.com/cli/)
-* [SAM CLI](https://github.com/awslabs/aws-sam-cli)
-* [Gradle](https://gradle.org/) or [Maven](https://maven.apache.org/)
+## Technical Requirements
 
-## Building the project
-You can use the SAM CLI to quickly build the project
-```bash
-$ mvn archetype:generate -DartifactId=photo-blog-application -DarchetypeGroupId=com.amazonaws.serverless.archetypes -DarchetypeArtifactId=aws-serverless-jersey-archetype -DarchetypeVersion=2.1.1 -DgroupId=org.umaxcode -Dversion=1.0-SNAPSHOT -Dinteractive=false
-$ cd photo-blog-application
-$ sam build
-Building resource 'PhotoBlogApplicationFunction'
-Running JavaGradleWorkflow:GradleBuild
-Running JavaGradleWorkflow:CopyArtifacts
+- **Frontend** must be hosted using **AWS Amplify** with a secure deployment process.
+- **Backend** must be fully serverless and provisioned using **AWS SAM**.
+- **User authentication** handled via **Amazon Cognito** (signup/sign-in).
+- **Storage** for images and blog content using **Amazon S3**.
+- **Compute logic** powered by **AWS Lambda**.
+- **Database** for storing metadata using **Amazon DynamoDB**.
+- **Notifications** for user actions using **Amazon SNS**.
+- **API endpoints** managed via **Amazon API Gateway**.
+- **Decoupled tasks** managed via **Amazon SQS**
+- **Domain creation** managed via **Amazon Rout353**, **Amazon ACM**
+- **Deployment pipeline** using **GitHub Actions**.
 
-Build Succeeded
+## Functional Requirements
 
-Built Artifacts  : .aws-sam/build
-Built Template   : .aws-sam/build/template.yaml
+### 🏆 User Account Management
 
-Commands you can use next
-=========================
-[*] Invoke Function: sam local invoke
-[*] Deploy: sam deploy --guided
-```
+- Users can **sign up** and create their own blog space.
+- Users can **log in** to:
+  - Upload images 📤
+  - View images 👀
+  - Delete images ❌
 
-## Testing locally with the SAM CLI
+### 📸 Image Management
 
-From the project root folder - where the `template.yml` file is located - start the API with the SAM CLI.
+- Only **watermarked images** are displayed to users
+- Users can generate **time-bound shareable links** for non-registered.
 
-```bash
-$ sam local start-api
+### 🗑️ Recycling Bin
 
-...
-Mounting com.amazonaws.serverless.archetypes.StreamLambdaHandler::handleRequest (java11) at http://127.0.0.1:3000/{proxy+} [OPTIONS GET HEAD POST PUT DELETE PATCH]
-...
-```
+- Deleted images are moved to a **recycling bin** instead of permanent deletion.
+- Users can **restore** or **permanently delete** images from the recycling bin.
+- Images in the recycling bin **cannot be shared** but remain viewable to the owner.
 
-Using a new shell, you can send a test ping request to your API:
+## Disaster Recovery Requirements
 
-```bash
-$ curl -s http://127.0.0.1:3000/ping | python -m json.tool
+- **RPO/RTO of 10 minutes** using a **Warm Standby Disaster Recovery Strategy**.
+- **Automated deployment of backend resources** to a disaster recovery (DR) region.
+- **Processed user images** must be replicated to a secondary S3 bucket in the DR region.
 
-{
-    "pong": "Hello, World!"
-}
-``` 
+## Deployment Guide
 
-## Deploying to AWS
-To deploy the application in your AWS account, you can use the SAM CLI's guided deployment process and follow the instructions on the screen
+### Prerequisites
 
-```
-$ sam deploy --guided
-```
+- AWS CLI installed and configured
+- AWS SAM installed
+- Node.js and npm installed
+- GitHub Actions configured for CI/CD
 
-Once the deployment is completed, the SAM CLI will print out the stack's outputs, including the new application URL. You can use `curl` or a web browser to make a call to the URL
+### Steps to Deploy
 
-```
-...
--------------------------------------------------------------------------------------------------------------
-OutputKey-Description                        OutputValue
--------------------------------------------------------------------------------------------------------------
-PhotoBlogApplicationApi - URL for application            https://xxxxxxxxxx.execute-api.us-west-2.amazonaws.com/Prod/pets
--------------------------------------------------------------------------------------------------------------
-```
-
-Copy the `OutputValue` into a browser or use curl to test your first request:
-
-```bash
-$ curl -s https://xxxxxxx.execute-api.us-west-2.amazonaws.com/Prod/ping | python -m json.tool
-
-{
-    "pong": "Hello, World!"
-}
-```
+1. **Clone the repository:**
