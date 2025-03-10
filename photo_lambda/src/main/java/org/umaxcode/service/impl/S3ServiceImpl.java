@@ -94,6 +94,8 @@ public class S3ServiceImpl implements S3Service {
 
     private GetPhotoDto getObjectBytes(Map<String, String> objectDetail) {
 
+        System.out.println("This is the object detail: " + objectDetail);
+
         GetObjectRequest request = GetObjectRequest.builder()
                 .bucket(primaryBucketName)
                 .key(objectDetail.get("objectKey"))
