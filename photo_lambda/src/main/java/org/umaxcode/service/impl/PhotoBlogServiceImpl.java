@@ -80,6 +80,8 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
             return List.of();
         }
 
+        System.out.println("For testing " + details.size());
+
         return s3Service.getObjects(details);
     }
 
