@@ -76,19 +76,9 @@ public class S3ServiceImpl implements S3Service {
 
     @Override
     public List<GetPhotoDto> getObjects(List<Map<String, String>> objectDetails) {
-        List<CompletableFuture<GetPhotoDto>> futures = objectDetails.stream()
-                .map(detail -> CompletableFuture.supplyAsync(() -> getObjectBytes(detail))) // Default ForkJoinPool
-                .toList();
-
-        // Wait for all tasks to complete non-blocking
-        CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-
-        return allDoneFuture.thenApply(v ->
-                futures.stream()
-                        .map(f -> f.exceptionally(this::handleException)) // Handle failures gracefully
-                        .map(CompletableFuture::join) // Join only when all are complete
-                        .toList()
-        ).join();
+        return  objectDetails.stream().map(
+               this::getObjectBytes
+        ).toList();
     }
 
     private GetPhotoDto getObjectBytes(Map<String, String> objectDetail) {
@@ -107,11 +97,6 @@ public class S3ServiceImpl implements S3Service {
                 .image(byteArray)
                 .build();
     } 
-
-    private GetPhotoDto handleException(Throwable ex) {
-        System.err.println("Error occurred: " + ex.getMessage());
-        return GetPhotoDto.builder().build(); // Return a default object instead of failing
-    }
 
     @Override
     public void deleteObject(String objectKey) {
