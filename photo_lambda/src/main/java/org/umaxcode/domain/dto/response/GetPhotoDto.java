@@ -9,5 +9,7 @@ import lombok.Getter;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GetPhotoDto {
     private String imgId;
-    private byte[] image;
+    private String image;
+    private String uploadDateTime;
+    private String resignUrlGenDateTime;
 }

@@ -3,12 +3,14 @@ package org.umaxcode.repository.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
+import org.umaxcode.domain.dto.response.GetPhotoDto;
 import org.umaxcode.domain.enums.OwnershipType;
 import org.umaxcode.exception.PhotoBlogException;
 import org.umaxcode.repository.PhotoBlogRepository;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +20,6 @@ import java.util.Map;
 public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
 
     private final DynamoDbClient dynamoDbClient;
-    private final String RECYCLE_BIN_PATH = "recycled/";
     @Value("${application.aws.tableName}")
     private String tableName;
 
@@ -37,25 +38,27 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
     }
 
     @Override
-    public List<Map<String, String>> getItemsDetails(String email, OwnershipType ownershipType) {
+    public List<GetPhotoDto> getItemsDetails(String email, OwnershipType ownershipType) {
 
         if (OwnershipType.OWN_PHOTO.equals(ownershipType)) {
             return getByOwner(email).stream()
-                    .map(photo -> Map.of(
-                            "picId", photo.get("picId").s(),
-                            "objectKey", extractObjectKey(photo.get("picUrl").s())))
+                    .map(photo -> GetPhotoDto.builder()
+                            .imgId(photo.get("picId").s())
+                            .image(photo.get("picUrl").s())
+                            .uploadDateTime(photo.get("dateOfUpload").s())
+                            .resignUrlGenDateTime(photo.get("preSignedUrlGenDate").s())
+                            .build())
                     .toList();
         }
 
         return getByOthers(email).stream()
-                .map(photo -> Map.of(
-                        "picId", photo.get("picId").s(),
-                        "objectKey", extractObjectKey(photo.get("picUrl").s())))
+                .map(photo -> GetPhotoDto.builder()
+                        .imgId(photo.get("picId").s())
+                        .image(photo.get("picUrl").s())
+                        .uploadDateTime(photo.get("dateOfUpload").s())
+                        .resignUrlGenDateTime(photo.get("preSignedUrlGenDate").s())
+                        .build())
                 .toList();
-    }
-
-    private String extractObjectKey(String s3Url) {
-        return s3Url.substring(s3Url.lastIndexOf("/") + 1);
     }
 
     private List<Map<String, AttributeValue>> getByOwner(String email) {
@@ -173,7 +176,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
     }
 
     @Override
-    public List<Map<String, String>> getAllItemsInRecycleBin(String email) {
+    public List<GetPhotoDto> getAllItemsInRecycleBin(String email) {
 
         ScanRequest scanRequest = ScanRequest.builder()
                 .tableName(tableName)
@@ -190,9 +193,34 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
         List<Map<String, AttributeValue>> items = dynamoDbClient.scan(scanRequest).items();
 
         return items.stream()
-                .map(photo -> Map.of(
-                        "picId", photo.get("picId").s(),
-                        "objectKey", RECYCLE_BIN_PATH  + email + "/" + extractObjectKey(photo.get("picUrl").s())))
+                .map(photo -> GetPhotoDto.builder()
+                        .imgId(photo.get("picId").s())
+                        .image(photo.get("picUrl").s())
+                        .uploadDateTime(photo.get("dateOfUpload").s())
+                        .build())
                 .toList();
+    }
+
+    @Override
+    public void updatePreSignedUrlsInDynamo(String id, String imageUrl) {
+        try {
+            Map<String, AttributeValue> key = Map.of(
+                    "picId", AttributeValue.builder().s(id).build()
+            );
+
+            UpdateItemRequest updateItemRequest = UpdateItemRequest.builder()
+                    .tableName(tableName)
+                    .key(key)
+                    .updateExpression("SET picUrl = :preSignedUrl, preSignedUrlGenDate = :signedDate")
+                    .expressionAttributeValues(Map.of(
+                            ":preSignedUrl", AttributeValue.builder().n(imageUrl).build(),
+                            ":signedDate", AttributeValue.builder().s(LocalDateTime.now().toString()).build()
+                    ))
+                    .build();
+
+            dynamoDbClient.updateItem(updateItemRequest);
+        } catch (Exception ex) {
+            throw new PhotoBlogException(ex.getMessage());
+        }
     }
 }

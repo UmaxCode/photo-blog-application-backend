@@ -13,7 +13,12 @@ import org.umaxcode.service.PhotoBlogService;
 import org.umaxcode.service.S3Service;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -75,14 +80,63 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     public List<GetPhotoDto> getImages(String ownership, Jwt jwt) {
         OwnershipType type = OwnershipType.fromString(ownership);
         String email = jwt.getClaimAsString("email");
-        List<Map<String, String>> details = photoBlogRepository.getItemsDetails(email, type);
-        if (details.isEmpty()) {
+        List<GetPhotoDto> photoDetails = photoBlogRepository.getItemsDetails(email, type);
+        return checkAndRefreshPreSignedUrl(photoDetails);
+    }
+
+    private List<GetPhotoDto> checkAndRefreshPreSignedUrl(List<GetPhotoDto> photoDetails) {
+
+        if (photoDetails.isEmpty()) {
             return List.of();
         }
 
-        System.out.println("For testing " + details.size());
+        // Check if any preSigned URLs need regeneration (24 hours old)
+        LocalDateTime twentyFourHoursAgo = LocalDateTime.now().minusHours(24);
+        List<GetPhotoDto> updatedDetails = new ArrayList<>();
 
-        return s3Service.getObjects(details);
+        for (GetPhotoDto photo : photoDetails) {
+            // Check if URL generation time is older than 24 hours
+            // Parse the date string from DynamoDB
+            LocalDateTime preSignedUrlGenDate = parseDateTime(photo.getResignUrlGenDateTime());
+
+            if (preSignedUrlGenDate == null || preSignedUrlGenDate.isBefore(twentyFourHoursAgo)) {
+                // URL has expired or is close to expiry, mark for regeneration
+                String url = s3Service.generatePreSignedUrl(extractObjectKey(photo.getImage()), 24).toString();
+
+                updatedDetails.add(GetPhotoDto.builder()
+                        .imgId(photo.getImgId())
+                        .image(url)
+                        .uploadDateTime(photo.getUploadDateTime())
+                        .build()
+                );
+
+                photoBlogRepository.updatePreSignedUrlsInDynamo(photo.getImgId(), url);
+
+            } else {
+                updatedDetails.add(GetPhotoDto.builder()
+                        .imgId(photo.getImgId())
+                        .image(photo.getImage())
+                        .uploadDateTime(photo.getUploadDateTime())
+                        .build()
+                );
+            }
+        }
+
+        return updatedDetails;
+    }
+
+    private LocalDateTime parseDateTime(String dateTime) {
+        LocalDateTime urlGenerationTime = null;
+        if (dateTime != null && !dateTime.isEmpty()) {
+            try {
+                urlGenerationTime = LocalDateTime.parse(dateTime);
+            } catch (DateTimeParseException e) {
+                System.err.println("Failed to parse datetime: " + dateTime);
+                // Continue with null datetime which will trigger regeneration
+            }
+        }
+
+        return urlGenerationTime;
     }
 
     @Override
@@ -103,7 +157,13 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
         String email = jwt.getClaimAsString("email");
         Map<String, AttributeValue> returnedAttribute = photoBlogRepository.addItemToRecycleBin(id);
         String objectKey = extractObjectKey(returnedAttribute.get("picUrl").s());
+
         s3Service.moveObject(objectKey, RECYCLE_BIN_PATH + email + "/" + objectKey);
+        ;
+        String url = s3Service.generatePreSignedUrl(RECYCLE_BIN_PATH + email + "/" + objectKey,
+                24).toString();
+        photoBlogRepository.updatePreSignedUrlsInDynamo(id, url);
+
         return GetPhotoDto.builder()
                 .imgId(returnedAttribute.get("picId").s())
                 .build();
@@ -116,6 +176,9 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
         String objectKey = extractObjectKey(returnedAttribute.get("picUrl").s());
         s3Service.moveObject(RECYCLE_BIN_PATH + email + "/"
                 + objectKey, objectKey);
+        String url = s3Service.generatePreSignedUrl(objectKey,
+                24).toString();
+        photoBlogRepository.updatePreSignedUrlsInDynamo(id, url);
         return GetPhotoDto.builder()
                 .imgId(returnedAttribute.get("picId").s())
                 .build();
@@ -124,15 +187,17 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     @Override
     public List<GetPhotoDto> retrieveAllImagesInRecyclingBin(Jwt jwt) {
         String email = jwt.getClaimAsString("email");
-        List<Map<String, String>> recycledItemsDetails = photoBlogRepository.getAllItemsInRecycleBin(email);
-        if (recycledItemsDetails.isEmpty()) {
-            return List.of();
-        }
-
-        return s3Service.getObjects(recycledItemsDetails);
+        List<GetPhotoDto> recycledItemsDetails = photoBlogRepository.getAllItemsInRecycleBin(email);
+        return checkAndRefreshPreSignedUrl(recycledItemsDetails);
     }
 
     private String extractObjectKey(String s3Url) {
-        return s3Url.substring(s3Url.lastIndexOf("/") + 1);
+        try {
+            URI uri = new URI(s3Url);
+            String path = uri.getPath(); // Get the path without query parameters
+            return path.substring(path.lastIndexOf("/") + 1); // Extract object key
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid URL: " + s3Url);
+        }
     }
 }

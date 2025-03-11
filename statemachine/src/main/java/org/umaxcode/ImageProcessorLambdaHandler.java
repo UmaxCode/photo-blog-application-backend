@@ -21,6 +21,8 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -28,7 +30,9 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -40,16 +44,16 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
     private final String tableName;
     private final String websocketMessageEndpoint;
     private final String primaryBucketName;
-    private final String awsRegion;
+    private final S3Presigner s3Presigner;
     private final ObjectMapper objectMapper;
     private final String connectTableName;
 
     public ImageProcessorLambdaHandler() {
+        this.s3Presigner = S3Presigner.create();
         this.s3Client = S3Client.create();
         this.dynamoDbClient = DynamoDbClient.create();
         this.tableName = System.getenv("AWS_DYNAMODB_TABLE_NAME");
         this.primaryBucketName = System.getenv("AWS_S3_PRIMARY_BUCKET_NAME");
-        this.awsRegion = System.getenv("AWS_REGION");
         this.objectMapper = new ObjectMapper();
         this.websocketMessageEndpoint = System.getenv("API_GATEWAY_WEBSOCKET_ENDPOINT");
         this.connectTableName = System.getenv("WEBSOCKET_CON_TABLE_NAME");
@@ -110,9 +114,24 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
 
         uploadImageToPrimaryBucket(processedImageContent, objectKey, context);
 
-        String imageUrl = "https://" + bucketName + ".s3." + this.awsRegion + ".amazonaws.com/" + objectKey;
-        storePhotoUrl(imageUrl, email, context);
-        return imageUrl;
+        String preSignedUrl = generatePreSignedUrl(objectKey).toString();
+        storePhotoUrl(preSignedUrl, email, context);
+        return preSignedUrl;
+    }
+
+    private URL generatePreSignedUrl(String objectKey) {
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(primaryBucketName)
+                .key(objectKey)
+                .build();
+
+        GetObjectPresignRequest preSignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofHours(24))
+                .getObjectRequest(getObjectRequest)
+                .build();
+
+        return s3Presigner.presignGetObject(preSignRequest).url();
     }
 
     private ResponseInputStream<GetObjectResponse> getS3Object(String bucketName, String objectKey, Context context) {
@@ -221,6 +240,7 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
         item.put("owner", AttributeValue.builder().s(owner).build());
         item.put("isPlacedInRecycleBin", AttributeValue.builder().n("0").build());
         item.put("dateOfUpload", AttributeValue.builder().s(LocalDateTime.now().toString()).build());
+        item.put("preSignedUrlGenDate", AttributeValue.builder().s(LocalDateTime.now().toString()).build());
 
         PutItemRequest putRequest = PutItemRequest.builder()
                 .tableName(tableName)

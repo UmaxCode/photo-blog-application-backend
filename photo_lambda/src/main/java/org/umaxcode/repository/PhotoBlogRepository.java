@@ -1,5 +1,6 @@
 package org.umaxcode.repository;
 
+import org.umaxcode.domain.dto.response.GetPhotoDto;
 import org.umaxcode.domain.enums.OwnershipType;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -12,11 +13,13 @@ public interface PhotoBlogRepository {
 
     Map<String, AttributeValue> deleteItem(String id);
 
-    List<Map<String, String>> getItemsDetails(String email, OwnershipType ownershipType);
+    List<GetPhotoDto> getItemsDetails(String email, OwnershipType ownershipType);
 
     Map<String, AttributeValue>  addItemToRecycleBin(String id);
 
+    void updatePreSignedUrlsInDynamo(String id, String imageUrl);
+
     Map<String, AttributeValue> restoreFromRecycleBin(String id);
 
-    List<Map<String, String>> getAllItemsInRecycleBin(String email);
+    List<GetPhotoDto> getAllItemsInRecycleBin(String email);
 }

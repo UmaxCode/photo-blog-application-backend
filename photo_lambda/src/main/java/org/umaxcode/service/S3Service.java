@@ -13,7 +13,7 @@ public interface S3Service {
 
     URL generatePreSignedUrl(String objectKey, int expirationInHours);
 
-    List<GetPhotoDto> getObjects(List<Map<String, String>> objectKeys);
+//    List<GetPhotoDto> getObjects(List<Map<String, String>> objectKeys);
 
     void deleteObject(String objectKey);
 

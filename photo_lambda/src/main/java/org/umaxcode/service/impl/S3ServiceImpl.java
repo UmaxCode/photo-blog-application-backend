@@ -74,29 +74,29 @@ public class S3ServiceImpl implements S3Service {
         return s3Presigner.presignGetObject(preSignRequest).url();
     }
 
-    @Override
-    public List<GetPhotoDto> getObjects(List<Map<String, String>> objectDetails) {
-        return  objectDetails.stream().map(
-               this::getObjectBytes
-        ).toList();
-    }
+//    @Override
+//    public List<GetPhotoDto> getObjects(List<Map<String, String>> objectDetails) {
+//        return  objectDetails.stream().map(
+//               this::getObjectBytes
+//        ).toList();
+//    }
 
-    private GetPhotoDto getObjectBytes(Map<String, String> objectDetail) {
-
-        System.out.println("This is the object detail: " + objectDetail);
-
-        GetObjectRequest request = GetObjectRequest.builder()
-                .bucket(primaryBucketName)
-                .key(objectDetail.get("objectKey"))
-                .build();
-
-        byte[] byteArray = s3Client.getObject(request, ResponseTransformer.toBytes()).asByteArray();
-
-        return GetPhotoDto.builder()
-                .imgId(objectDetail.get("picId"))
-                .image(byteArray)
-                .build();
-    } 
+//    private GetPhotoDto getObjectBytes(Map<String, String> objectDetail) {
+//
+//        System.out.println("This is the object detail: " + objectDetail);
+//
+//        GetObjectRequest request = GetObjectRequest.builder()
+//                .bucket(primaryBucketName)
+//                .key(objectDetail.get("objectKey"))
+//                .build();
+//
+//        byte[] byteArray = s3Client.getObject(request, ResponseTransformer.toBytes()).asByteArray();
+//
+//        return GetPhotoDto.builder()
+//                .imgId(objectDetail.get("picId"))
+//                .image(byteArray)
+//                .build();
+//    }
 
     @Override
     public void deleteObject(String objectKey) {
