@@ -76,20 +76,19 @@ public class S3ServiceImpl implements S3Service {
 
     @Override
     public List<GetPhotoDto> getObjects(List<Map<String, String>> objectDetails) {
-        ExecutorService executor = Executors.newFixedThreadPool(objectDetails.size());
-
-        // Use CompletableFuture for parallel execution
         List<CompletableFuture<GetPhotoDto>> futures = objectDetails.stream()
-                .map(detail -> CompletableFuture.supplyAsync(() -> getObjectBytes(detail), executor))
+                .map(detail -> CompletableFuture.supplyAsync(() -> getObjectBytes(detail))) // Default ForkJoinPool
                 .toList();
 
-        // Wait for all tasks to complete and collect results
-        List<GetPhotoDto> result = futures.stream()
-                .map(CompletableFuture::join)
-                .toList();
+        // Wait for all tasks to complete non-blocking
+        CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
-        executor.shutdown();
-        return result;
+        return allDoneFuture.thenApply(v ->
+                futures.stream()
+                        .map(f -> f.exceptionally(this::handleException)) // Handle failures gracefully
+                        .map(CompletableFuture::join) // Join only when all are complete
+                        .toList()
+        ).join();
     }
 
     private GetPhotoDto getObjectBytes(Map<String, String> objectDetail) {
@@ -107,6 +106,11 @@ public class S3ServiceImpl implements S3Service {
                 .imgId(objectDetail.get("picId"))
                 .image(byteArray)
                 .build();
+    } 
+
+    private GetPhotoDto handleException(Throwable ex) {
+        System.err.println("Error occurred: " + ex.getMessage());
+        return GetPhotoDto.builder().build(); // Return a default object instead of failing
     }
 
     @Override
