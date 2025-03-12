@@ -213,7 +213,7 @@ public class PhotoBlogRepositoryImpl implements PhotoBlogRepository {
                     .key(key)
                     .updateExpression("SET picUrl = :preSignedUrl, preSignedUrlGenDate = :signedDate")
                     .expressionAttributeValues(Map.of(
-                            ":preSignedUrl", AttributeValue.builder().n(imageUrl).build(),
+                            ":preSignedUrl", AttributeValue.builder().s(imageUrl).build(),
                             ":signedDate", AttributeValue.builder().s(LocalDateTime.now().toString()).build()
                     ))
                     .build();
