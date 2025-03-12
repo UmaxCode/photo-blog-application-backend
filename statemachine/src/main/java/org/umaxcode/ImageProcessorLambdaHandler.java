@@ -112,9 +112,11 @@ public class ImageProcessorLambdaHandler implements RequestHandler<Map<String, O
 
         byte[] processedImageContent = addImageWatermark(s3ObjectResponse, fullName, context);
 
-        uploadImageToPrimaryBucket(processedImageContent, objectKey, context);
+        String dynamicObjectKey = System.currentTimeMillis() + "-" + objectKey;
 
-        String preSignedUrl = generatePreSignedUrl(objectKey).toString();
+        uploadImageToPrimaryBucket(processedImageContent, dynamicObjectKey, context);
+
+        String preSignedUrl = generatePreSignedUrl(dynamicObjectKey).toString();
         storePhotoUrl(preSignedUrl, email, context);
         return preSignedUrl;
     }
