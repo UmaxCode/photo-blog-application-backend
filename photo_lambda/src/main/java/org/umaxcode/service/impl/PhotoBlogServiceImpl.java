@@ -145,7 +145,7 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
         Map<String, AttributeValue> deleteResponse = photoBlogRepository.deleteItem(id);
         if (!deleteResponse.isEmpty()) {
             String objectURL = deleteResponse.get("picUrl").s();
-            s3Service.deleteObject(RECYCLE_BIN_PATH + email + "/" + extractObjectKey(objectURL));
+            s3Service.deleteObject(extractObjectKey(objectURL));
             return;
         }
 
@@ -174,8 +174,8 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
         String email = jwt.getClaimAsString("email");
         Map<String, AttributeValue> returnedAttribute = photoBlogRepository.restoreFromRecycleBin(id);
         String objectKey = extractObjectKey(returnedAttribute.get("picUrl").s());
-        s3Service.moveObject(RECYCLE_BIN_PATH + email + "/"
-                + objectKey, objectKey);
+        String oldObjectKey = objectKey.substring(objectKey.lastIndexOf("/") + 1);
+        s3Service.moveObject(objectKey, oldObjectKey);
         String url = s3Service.generatePreSignedUrl(objectKey,
                 24).toString();
         photoBlogRepository.updatePreSignedUrlsInDynamo(id, url);
