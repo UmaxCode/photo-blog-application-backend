@@ -194,8 +194,16 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
     private String extractObjectKey(String s3Url) {
         try {
             URI uri = new URI(s3Url);
-            String path = uri.getPath(); // Get the path without query parameters
-            return path.substring(path.lastIndexOf("/") + 1); // Extract object key
+
+            // Get the path part of the URL (e.g., "/subfolder/file.txt")
+            String path = uri.getPath();
+
+            // Remove the leading slash to get the object key
+            if (path.startsWith("/")) {
+                path = path.substring(1);
+            }
+
+            return path;
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Invalid URL: " + s3Url);
         }
