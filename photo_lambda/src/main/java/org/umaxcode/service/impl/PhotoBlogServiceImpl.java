@@ -176,7 +176,7 @@ public class PhotoBlogServiceImpl implements PhotoBlogService {
         String objectKey = extractObjectKey(returnedAttribute.get("picUrl").s());
         String oldObjectKey = objectKey.substring(objectKey.lastIndexOf("/") + 1);
         s3Service.moveObject(objectKey, oldObjectKey);
-        String url = s3Service.generatePreSignedUrl(objectKey,
+        String url = s3Service.generatePreSignedUrl(oldObjectKey,
                 24).toString();
         photoBlogRepository.updatePreSignedUrlsInDynamo(id, url);
         return GetPhotoDto.builder()
